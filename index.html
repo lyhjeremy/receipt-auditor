@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Receipt Auditor — photograph receipts, get reconciled spending data</title>
+<meta name="description" content="Photograph a stack of receipts and get reconciled, categorized spending data with PII redaction and a voice-queryable dashboard — plus a locally fine-tuned classifier that beats Claude's zero-shot guess on spend categorization. No vision API key needed." />
+<style>
+  :root{--ink:#1c2a24;--paper:#F6F8F4;--rule:#D8E3D6;--soft:#5f6f66;--accent:#2F6B4F;--money:#1F4D3A;--slip:#3A5A46}
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:Georgia,'Times New Roman',serif;line-height:1.7;font-size:18px}
+  .hero{width:100%;background:#12241a;overflow:hidden}
+  .hero img{width:100%;display:block}
+  .container{max-width:820px;margin:0 auto;padding:38px 24px 80px}
+  .kicker{text-transform:uppercase;letter-spacing:.16em;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:var(--slip);font-weight:700;text-align:center;margin-bottom:12px}
+  h1{font-size:40px;line-height:1.16;text-align:center;margin:0 0 14px}
+  .lede{font-size:20px;color:#33403a;text-align:center;margin:0 auto 6px;max-width:680px}
+  .byline{color:var(--soft);font-style:italic;text-align:center;margin:18px 0 30px}
+  h2{font-size:26px;margin:50px 0 14px;border-bottom:1px solid var(--rule);padding-bottom:8px}
+  p{margin:0 0 16px} a{color:var(--money)}
+  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:26px 0}
+  .card{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:20px;font-family:'Helvetica Neue',Arial,sans-serif}
+  .card .ico{font-size:24px}.card h3{margin:8px 0 6px;font-size:18px}.card p{font-size:15px;color:#444;margin:0;line-height:1.6}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:24px 0}
+  .steps li{position:relative;padding:12px 0 12px 54px;border-bottom:1px dashed var(--rule);font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:10px;width:34px;height:34px;border-radius:50%;background:var(--money);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .note{background:#fff;border:1px solid var(--rule);border-left:4px solid var(--money);border-radius:8px;padding:14px 20px;font-size:14.5px;color:#444;font-family:'Helvetica Neue',Arial,sans-serif;margin:24px 0}
+  table{width:100%;border-collapse:collapse;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14.5px;margin:20px 0}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--rule);text-align:left}
+  th{color:var(--slip);font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+  .btnrow{text-align:center;margin:40px 0 8px}
+  .btn{display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:13px 24px;border-radius:8px;margin:6px}
+  .btn-solid{background:var(--money);color:#fff}.btn-ghost{border:1px solid var(--money);color:var(--money)}
+  .footer{text-align:center;color:var(--soft);font-size:14px;margin-top:54px;font-family:'Helvetica Neue',Arial,sans-serif}
+  @media(max-width:600px){h1{font-size:30px}.features{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="hero"><img src="assets/banner.png" alt="Receipt Auditor"/></div>
+<div class="container">
+  <p class="kicker">Local vision, reconciled, private by construction</p>
+  <h1>Receipt Auditor</h1>
+  <p class="lede">Photograph a stack of receipts — get <strong>reconciled, categorized spending data</strong> with PII redaction built into the schema, plus a <strong>locally fine-tuned classifier</strong> that beats Claude's cold guess on spend categorization.</p>
+  <p class="byline">By Jeremy Lee</p>
+
+  <h2>Why</h2>
+  <p>Ask a chatbot to tally your spending from receipt photos and you're trusting it to read every number right <em>and</em> report the sum honestly. Receipt Auditor never lets the model do arithmetic: totals are reconciled in plain code, spend answers are computed by pandas and only phrased by the model — with a guard that catches a dropped or altered number before it ships.</p>
+
+  <div class="features">
+    <div class="card"><div class="ico">📷</div><h3>No vision API key</h3><p>Local OCR (tesseract) + Claude reads each receipt — refuses non-receipt photos, flags low-confidence reads.</p></div>
+    <div class="card"><div class="ico">🧮</div><h3>Reconciled, in code</h3><p>Computed total vs. printed total, checked in plain Python. Mismatches flag for human review, never a silent "fix."</p></div>
+    <div class="card"><div class="ico">🔒</div><h3>PII, four layers deep</h3><p>Schema has no PII fields · raw OCR discarded · regex sweep · session-only on the Space.</p></div>
+    <div class="card"><div class="ico">🧠</div><h3>Locally fine-tuned</h3><p>A LoRA-tuned classifier categorizes spending — runs on a laptop, $0 marginal cost.</p></div>
+  </div>
+
+  <h2>The categorizer, honestly benchmarked</h2>
+  <p>Every line item gets a spend category from a Qwen2.5-1.5B model, LoRA fine-tuned locally on 4,799 synthetic receipts across realistic POS merchant styles. Benchmarked against the untrained base model and Claude — all three given the identical blind prompt, no category list in-context:</p>
+
+  <table>
+    <tr><th>System</th><th>Top-1 acc</th><th>Macro-F1</th><th>Cost</th></tr>
+    <tr><td>Base model (no fine-tune)</td><td>27.7%</td><td>0.333</td><td>$0</td></tr>
+    <tr><td><strong>+ LoRA fine-tune</strong></td><td><strong>90.5%</strong></td><td><strong>0.893</strong></td><td>$0</td></tr>
+    <tr><td>Claude (teacher, zero-shot)</td><td>56.0%</td><td>0.506</td><td>Max subscription</td></tr>
+  </table>
+
+  <div class="note">🏆 The fine-tuned local model's Top-1 accuracy <strong>beats Claude's zero-shot Top-1 by 34.5 points</strong> — same blind prompt for all three systems, so this is a fair fight, not LoRA getting a hint Claude didn't see.</div>
+  <div class="note">📋 No real-receipt column yet: the honest synthetic-vs-real tiebreaker needs 10-20 of Jeremy's real receipts, hand-labeled — reported as an open gap, not hidden.</div>
+
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li>Upload a batch of receipt photos — local OCR extracts the text, Claude structures it into a receipt and flags anything illegible for you to correct.</li>
+    <li>Each receipt's total is reconciled against its line items + tax in plain code — mismatches are flagged, never silently fixed.</li>
+    <li>Each line item is categorized by the locally fine-tuned classifier; PII is swept from every field before anything is cached.</li>
+    <li>Ask a spending question by voice or text — pandas computes the answer, the model only phrases it, and a guard verifies the number survived phrasing.</li>
+  </ol>
+
+  <div class="note">🔒 Everything runs locally except one <code>claude -p</code> call per receipt — no metered API, no vision API key. See the <a href="writeup.md">full writeup</a> for the honest engineering story, including two real bugs found and fixed by the test suite.</div>
+
+  <div class="btnrow">
+    <a class="btn btn-solid" href="https://github.com/lyhjeremy/receipt-auditor">View on GitHub</a>
+    <a class="btn btn-ghost" href="writeup.md">Read the writeup</a>
+  </div>
+
+  <p class="footer">Built by Jeremy Lee · MIT licensed</p>
+</div>
+</body>
+</html>

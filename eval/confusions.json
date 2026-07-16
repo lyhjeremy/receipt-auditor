@@ -1,0 +1,37 @@
+[
+  {
+    "true": "household",
+    "predicted": "other",
+    "count": 7
+  },
+  {
+    "true": "travel",
+    "predicted": "transport",
+    "count": 4
+  },
+  {
+    "true": "transport",
+    "predicted": "fuel",
+    "count": 4
+  },
+  {
+    "true": "other",
+    "predicted": "health",
+    "count": 2
+  },
+  {
+    "true": "fuel",
+    "predicted": "transport",
+    "count": 2
+  },
+  {
+    "true": "dining",
+    "predicted": "coffee_snacks",
+    "count": 1
+  },
+  {
+    "true": "travel",
+    "predicted": "fuel",
+    "count": 1
+  }
+]

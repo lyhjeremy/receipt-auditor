@@ -1,0 +1,23 @@
+Full test set: 220 rows; base/LoRA on a 220-row subsample
+Running base model...
+Running base+LoRA...
+Running Claude zero-shot on a 150-row subsample (concurrent with Menu Decoder's dish generator -- watching for rate-limit errors)...
+# Receipt Auditor -- Spend-Category Classifier Benchmark
+
+Full held-out test set: 220 rows, held out by merchant (no merchant appears in both train and test). base/LoRA evaluated on a 220-row subsample; Claude teacher on a separate 150-row subsample (both disclosed, not hidden). **No real-receipt column**: Jeremy hasn't yet supplied the 10-20 labeled real receipts the spec calls for (RECEIPT_AUDITOR_SPEC.md Sec.2) -- these numbers are synthetic-only.
+
+| System | N | Top-1 acc | Macro-F1 | Latency (s/item) | Cost/1k |
+|---|---|---|---|---|---|
+| base | 220 | 27.7% | 0.333 | 4.985 | 0 |
+| lora | 220 | 90.5% | 0.893 | 4.52 | 0 |
+| claude_teacher | 150 | 56.0% | 0.506 | 17.702 | Max subscription (no per-call API cost) |
+
+## Top confusions (LoRA model, true -> predicted)
+
+- household -> other: 7 times
+- travel -> transport: 4 times
+- transport -> fuel: 4 times
+- other -> health: 2 times
+- fuel -> transport: 2 times
+- dining -> coffee_snacks: 1 times
+- travel -> fuel: 1 times

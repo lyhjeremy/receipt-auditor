@@ -1,0 +1,58 @@
+{
+  "counts": {
+    "train": 4309,
+    "valid": 270,
+    "test": 220
+  },
+  "n_entities": {
+    "train": 2537,
+    "valid": 128,
+    "test": 158
+  },
+  "leakage_check": "passed",
+  "label_balance": {
+    "train": {
+      "groceries": 356,
+      "dining": 359,
+      "coffee_snacks": 366,
+      "transport": 363,
+      "fuel": 373,
+      "health": 338,
+      "household": 368,
+      "clothing": 357,
+      "entertainment": 331,
+      "subscriptions_utilities": 367,
+      "travel": 378,
+      "other": 353
+    },
+    "valid": {
+      "groceries": 35,
+      "dining": 28,
+      "coffee_snacks": 19,
+      "transport": 22,
+      "fuel": 13,
+      "health": 47,
+      "household": 16,
+      "clothing": 13,
+      "entertainment": 42,
+      "subscriptions_utilities": 10,
+      "travel": 6,
+      "other": 19
+    },
+    "test": {
+      "groceries": 9,
+      "dining": 13,
+      "coffee_snacks": 15,
+      "transport": 15,
+      "fuel": 14,
+      "health": 15,
+      "household": 16,
+      "clothing": 30,
+      "entertainment": 26,
+      "subscriptions_utilities": 23,
+      "travel": 16,
+      "other": 28
+    }
+  },
+  "real_receipts_held_out": 0
+}

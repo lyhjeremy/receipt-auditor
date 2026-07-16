@@ -1,0 +1,26 @@
+[
+  {
+    "system": "base",
+    "n": 220,
+    "top1_acc": 0.2773,
+    "macro_f1": 0.3334,
+    "mean_latency_s": 4.985,
+    "cost_per_1k_calls_usd": 0
+  },
+  {
+    "system": "lora",
+    "n": 220,
+    "top1_acc": 0.9045,
+    "macro_f1": 0.8929,
+    "mean_latency_s": 4.52,
+    "cost_per_1k_calls_usd": 0
+  },
+  {
+    "system": "claude_teacher",
+    "n": 150,
+    "top1_acc": 0.56,
+    "macro_f1": 0.5059,
+    "mean_latency_s": 17.702,
+    "cost_per_1k_calls_usd": "Max subscription (no per-call API cost)"
+  }
+]
