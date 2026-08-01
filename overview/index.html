@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Receipt Auditor — 90.5% against Claude's 56.0%, and a number the model cannot hallucinate</title>
+<meta name="description" content="Photograph receipts, get reconciled and categorized spend. A locally fine-tuned classifier hits 90.5% against Claude's zero-shot 56.0%, and spending answers are computed by pandas so a made-up number is structurally impossible." />
+<meta name="theme-color" content="#FBF8F1" />
+<meta property="og:title" content="Receipt Auditor" />
+<meta property="og:description" content="A 1.5B local classifier beating Claude zero-shot by 34.5 points, and an architecture where hallucinated numbers cannot occur." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lyhjeremy.github.io/receipt-auditor/overview/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #FBF8F1;
+    --card: #FFFFFF;
+    --plate: #FFFFFF;
+    --ink: #1a1a2e;
+    --ink2: #3d3d55;
+    --muted: #6B7280;
+    --rule: #E5DCC7;
+    --accent: #047857;
+    --accent2: #0E7490;
+    --link: #7a1f2b;
+    --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    --sans: 'Source Sans 3', -apple-system, system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+    --shadow: 0 1px 2px rgba(26,26,46,.05), 0 10px 34px rgba(26,26,46,.07);
+    --spine:  92px;
+    --col:    min(100% - 2.6rem, 62rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #14141f;
+      --card: #1c1c2a;
+      --plate: #f7f4ec;
+      --ink: #F2EFE6;
+      --ink2: #C9C4B6;
+      --muted: #918B7D;
+      --rule: #33313f;
+      --accent: #34D399;
+      --accent2: #22D3EE;
+      --link: #E0899A;
+      --shadow: 0 1px 2px rgba(0,0,0,.32), 0 10px 34px rgba(0,0,0,.4);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--serif); font-size: clamp(17px, 0.55rem + 0.6vw, 19.5px);
+    line-height: 1.68; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: var(--link); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  strong { font-weight: 700; color: var(--ink); }
+  code { font-family: var(--mono); font-size: .86em;
+         background: color-mix(in srgb, var(--ink) 7%, transparent);
+         padding: .12em .38em; border-radius: 4px; }
+  .wrap { width: var(--col); margin: 0 auto; }
+
+  .eyebrow { font-family: var(--mono); font-weight: 600; font-size: 11.5px;
+             letter-spacing: .17em; text-transform: uppercase; color: var(--muted);
+             margin: 0 0 14px; }
+
+  .masthead { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding: 30px 0 0; }
+  .logo { font-family: var(--sans); font-weight: 800; font-size: 21px;
+          letter-spacing: -.02em; display: flex; align-items: center; gap: 9px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: none; }
+  .tagline { font-size: 15px; color: var(--ink2); font-family: var(--sans); }
+
+  .hero { padding: 44px 0 54px; }
+  .kicker { font-family: var(--sans); font-size: clamp(18px, 2.1vw, 23px); font-weight: 600;
+            color: var(--muted); margin: 0 0 8px; letter-spacing: -.01em; }
+  .hero h1 { font-family: var(--sans); font-size: clamp(37px, 6vw, 72px); font-weight: 800;
+             letter-spacing: -.035em; line-height: 1.04; margin: 0; max-width: 17ch; }
+  .hero-sub { margin: 24px 0 0; font-size: 1.06em; color: var(--ink2); max-width: 60ch; }
+
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; align-items: center; }
+  .btn { display: inline-block; padding: 13px 26px; border-radius: 8px;
+         font-family: var(--sans); font-weight: 700; font-size: 16px;
+         text-decoration: none; border: 1px solid var(--ink); transition: transform .15s ease; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: var(--ink); color: var(--paper); }
+  .textlink { font-family: var(--sans); font-size: 16px; font-weight: 600; color: var(--ink2);
+              text-decoration: underline; text-underline-offset: 4px;
+              text-decoration-thickness: 1px; }
+  .textlink:hover { color: var(--ink); }
+
+  .claims { display: grid; grid-template-columns: 1fr; gap: 0 52px; margin: 50px 0 0; }
+  @media (min-width: 760px) { .claims { grid-template-columns: 1fr 1fr; } }
+  .claim { padding: 18px 0 20px; border-top: 1px solid var(--rule); }
+  .claim:first-child, .claim:nth-child(2) { border-top: 2px solid var(--ink); }
+  @media (max-width: 759px) { .claim:nth-child(2) { border-top: 1px solid var(--rule); } }
+  .claim .n { font-family: var(--sans); font-weight: 800; font-size: 40px; line-height: 1.05;
+              color: var(--accent); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .claim h3 { margin: 0 0 6px; }
+  .claim p { margin: 9px 0 0; font-size: 15.5px; color: var(--ink2); line-height: 1.5;
+             font-family: var(--sans); }
+
+  .route { position: relative; padding-bottom: 30px; }
+  .route::before { content: ""; position: absolute; left: calc(var(--spine) / 2); top: 8px;
+                   bottom: 80px; width: 2px; background: var(--rule); }
+  .stop { position: relative; padding: 0 0 76px var(--spine); }
+  .stop::before { content: ""; position: absolute; left: calc(var(--spine) / 2 - 7px); top: 7px;
+                  width: 16px; height: 16px; border-radius: 50%;
+                  background: var(--paper); border: 2px solid var(--ink); box-sizing: border-box; }
+  .stop--key::before { background: var(--accent); border-color: var(--accent); }
+  .stop--warn::before { background: var(--accent2); border-color: var(--accent2); }
+  .stop--end::before { background: var(--ink); }
+
+  h2 { font-family: var(--sans); font-size: clamp(27px, 3.7vw, 38px); font-weight: 800;
+       letter-spacing: -.027em; line-height: 1.13; margin: 12px 0 16px; max-width: 19ch; }
+  h3 { font-family: var(--sans); font-size: 17px; font-weight: 700; margin: 0 0 7px;
+       letter-spacing: -.012em; }
+  .stop p { margin: 0 0 17px; max-width: 60ch; color: var(--ink2); }
+
+  .bignum { font-family: var(--sans); font-weight: 800; font-size: clamp(74px, 10vw, 128px);
+            line-height: .86; letter-spacing: -.05em; margin: 6px 0 4px; color: var(--accent);
+            font-variant-numeric: tabular-nums; }
+  .bignum-note { font-family: var(--sans); font-size: 16px; color: var(--muted); margin: 0 0 20px; }
+
+  /* A white-background chart would glow in dark mode; the plate makes it read
+     as a deliberately printed page instead. */
+  figure { margin: 28px 0 0; }
+  .plate { background: var(--plate); border: 1px solid var(--rule); border-radius: 10px;
+           padding: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .plate img { border-radius: 4px; }
+  .plate--flush { padding: 0; }
+  .shot { border-radius: 10px; border: 1px solid var(--rule); box-shadow: var(--shadow);
+          overflow: hidden; background: var(--card); }
+  /* min() so the cap never exceeds the column on a phone */
+  .shot--narrow { max-width: min(430px, 100%); }
+  figcaption { margin-top: 11px; font-family: var(--sans); font-size: 14.5px;
+               color: var(--muted); line-height: 1.5; }
+  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+            gap: 22px; margin-top: 28px; }
+  .panels figure { margin: 0; }
+
+  .pull { margin: 30px 0 0; padding: 20px 25px; border-left: 3px solid var(--accent);
+          background: color-mix(in srgb, var(--accent) 7%, transparent);
+          border-radius: 0 8px 8px 0; }
+  .pull p { margin: 0 0 9px; color: var(--ink); max-width: none; }
+  .pull p:last-of-type { margin: 0; }
+  .pull .who { font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+               text-transform: uppercase; color: var(--muted); display: block; margin-top: 9px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+          gap: 1px; margin-top: 28px; background: var(--rule);
+          border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .cell { background: var(--paper); padding: 22px 20px; }
+  .cell p { font-size: 15px; margin: 0; color: var(--ink2); max-width: none;
+            line-height: 1.55; font-family: var(--sans); }
+
+  /* results tables: scroll inside their own box, never the page */
+  .tablewrap { margin-top: 26px; overflow-x: auto; border: 1px solid var(--rule);
+               border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 480px;
+          font-family: var(--sans); font-size: 15.5px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--rule); }
+  th { font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+       text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td { color: var(--ink2); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: 0; }
+  .win td { color: var(--ink); font-weight: 700;
+            background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
+  /* real terminal output, quoted verbatim */
+  .term { margin-top: 26px; background: #14141f; color: #e6e3da; border-radius: 10px;
+          padding: 18px 20px; overflow-x: auto; box-shadow: var(--shadow);
+          border: 1px solid #2a2a3a; }
+  .term pre { margin: 0; font-family: var(--mono); font-size: 13px; line-height: 1.62;
+              white-space: pre; }
+  .term .c { color: #9aa08f; }
+  .term .g { color: #7fd18f; }
+  .term .y { color: #E3BC5E; }
+
+  .specs { margin-top: 26px; border-top: 1px solid var(--rule); }
+  .spec { display: grid; grid-template-columns: 1fr; gap: 2px;
+          padding: 14px 0; border-bottom: 1px solid var(--rule); }
+  @media (min-width: 700px) { .spec { grid-template-columns: 178px 1fr; gap: 24px; } }
+  .spec dt { font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em;
+             text-transform: uppercase; color: var(--muted); padding-top: 4px; }
+  .spec dd { margin: 0; font-size: 16px; color: var(--ink2); font-family: var(--sans); }
+
+  .close { padding: 6px 0 80px var(--spine); position: relative; }
+  .close h2 { max-width: 20ch; }
+  footer { border-top: 1px solid var(--rule); padding: 28px 0 60px;
+           font-family: var(--sans); font-size: 14.5px; color: var(--muted); }
+  footer a { color: var(--ink2); }
+  footer p { margin: 0 0 8px; }
+
+  @media (max-width: 640px) {
+    :root { --spine: 38px; }
+    .hero { padding: 36px 0 46px; }
+    .stop { padding-bottom: 58px; }
+    .plate { padding: 9px; }
+    .term { padding: 14px 14px; }
+    .term pre { font-size: 11.5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn { transition: none; }
+  }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="logo"><span class="dot" aria-hidden="true"></span>Receipt Auditor</div>
+    <div class="tagline">receipts in, reconciled spend out</div>
+  </header>
+
+  <section class="hero">
+    <p class="kicker">The risk with receipts is not bad OCR. It is a confident wrong total.</p>
+    <h1>So the model is never allowed to produce a number.</h1>
+
+    <p class="hero-sub">
+      Photograph a stack of receipts and get reconciled, categorized spending you
+      can query out loud. Totals are checked in plain code against the printed
+      total. Spending answers are computed by <strong>pandas</strong> and only
+      <em>phrased</em> by the model, with a guard that rejects the phrasing if a
+      number changes. And the categorizer is a <strong>1.5B model fine-tuned on
+      this laptop</strong> that beats Claude's zero-shot accuracy by
+      <strong>34.5 points</strong>.
+    </p>
+
+    <div class="cta-row">
+      <a class="btn btn-primary" href="../writeup.md">Read the writeup</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor">or the code</a>
+    </div>
+
+    <figure style="margin-top:38px">
+      <img width="1800" height="450" class="shot" src="../assets/banner.png"
+        alt="Receipt Auditor banner artwork." />
+    </figure>
+
+    <div class="claims">
+      <div class="claim">
+        <div class="n">90.5%</div>
+        <p>Top-1 category accuracy from the fine-tuned model, against Claude's
+           zero-shot <strong>56.0%</strong> on the identical blind prompt.</p>
+      </div>
+      <div class="claim">
+        <div class="n">0.893</div>
+        <p>macro-F1, against 0.506. It holds up across all twelve categories, not
+           just the common ones.</p>
+      </div>
+      <div class="claim">
+        <div class="n">4 layers</div>
+        <p>of PII defence, starting with a schema that has nowhere to put a card
+           number in the first place.</p>
+      </div>
+      <div class="claim">
+        <div class="n">0</div>
+        <p>numbers originating from the model in a spend answer. The guard makes a
+           hallucinated figure structurally impossible.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+<div class="route">
+
+  <section class="stop stop--key">
+    <p class="eyebrow">↓ the headline result</p>
+    <h2>34.5 points over the frontier model</h2>
+
+    <div class="bignum">90.5%</div>
+    <p class="bignum-note">against Claude zero-shot at 56.0%, on the same twelve-category blind prompt.</p>
+
+    <p>
+      All three systems saw the <strong>identical</strong> prompt with no category
+      list supplied, matching the training format exactly. The fine-tuned model was
+      not handed a hint the others lacked — this is a fair comparison of what each
+      brings on its own.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>System</th><th>Top-1 acc</th><th>Macro-F1</th><th>Latency</th><th>Cost/1k</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Base Qwen2.5-1.5B (no fine-tune)</td><td>27.7%</td><td>0.333</td><td>5.0s</td><td>$0</td></tr>
+          <tr class="win"><td>+ LoRA (this project)</td><td>90.5%</td><td>0.893</td><td>4.5s</td><td>$0</td></tr>
+          <tr><td>Claude (teacher, zero-shot)</td><td>56.0%</td><td>0.506</td><td>17.7s</td><td>Max sub</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:22px">
+      It is also <strong>four times faster</strong> and costs nothing per call. The
+      training set is 4,799 synthetic line items written in realistic point-of-sale
+      styles — <code>SBUX #4821</code>, <code>WM SUPERCENTER #2847</code>,
+      <code>TST* JOE'S PIZZA</code> — and split <strong>by merchant</strong>, so no
+      merchant appears on both sides of the split.
+    </p>
+    <figure>
+      <div class="plate">
+        <img width="1200" height="1050" src="../eval/confusion_matrix.png" loading="lazy"
+          alt="Confusion matrix across the twelve spend categories showing a strong diagonal with limited confusion between neighbouring categories such as dining and coffee." />
+      </div>
+      <figcaption>Twelve categories. The residual confusion is mostly dining against coffee, which is fair.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stop">
+    <p class="eyebrow">↓ the design idea</p>
+    <h2>The number never originates from the model</h2>
+    <p>
+      Ask "how much did I spend on dining in March" and the arithmetic is done by
+      <code>analysis.answer_query</code> in pandas. The LLM receives the computed
+      figures and is asked only to turn them into a sentence. Then
+      <code>reconcile.assert_numbers_present</code> checks that every number it was
+      given still appears in what it wrote — and if one was dropped or altered, the
+      caller falls back to a template sentence.
+    </p>
+    <p>
+      This is the difference between asking a model not to hallucinate and building
+      a path where it cannot. There is no code route by which a number the model
+      invented reaches the screen.
+    </p>
+    <div class="pull">
+      <p>A hallucinated number is structurally impossible here, because the number
+         never originated from the model.</p>
+      <span class="who">From the repository's own README</span>
+    </div>
+  </section>
+
+  <section class="stop">
+    <p class="eyebrow">↓ reconciliation</p>
+    <h2>A mismatch is flagged, never quietly fixed</h2>
+    <p>
+      For each receipt, <code>computed = Σ(line items) + tax</code> is compared
+      against the printed total within a small tolerance. When they disagree the
+      receipt is <strong>rendered flagged for one-tap human review</strong> rather
+      than silently adjusted to agree.
+    </p>
+    <p>
+      Silently correcting a mismatch is the tempting behaviour and the wrong one:
+      it destroys exactly the signal that tells you the OCR misread a line.
+    </p>
+    <figure>
+      <div class="plate">
+        <img width="1575" height="825" src="../assets/architecture.png" loading="lazy"
+          alt="Receipt Auditor pipeline diagram: receipt photos into local OCR, structured extraction, PII sweep, code-level reconciliation, fine-tuned categorisation, then a pandas analysis layer with an LLM used only for phrasing." />
+      </div>
+      <figcaption>The pipeline. Note where the LLM sits, and where it does not.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stop">
+    <p class="eyebrow">↓ privacy</p>
+    <h2>Four layers, the first of which is doing most of the work</h2>
+    <div class="grid">
+      <div class="cell">
+        <h3>1 · The schema has no room</h3>
+        <p>The <code>Receipt</code> and <code>LineItem</code> models simply have no
+           fields for cardholder name, card number, address or loyalty id. The
+           vision model is never asked for them.</p>
+      </div>
+      <div class="cell">
+        <h3>2 · Raw OCR is discarded</h3>
+        <p>Only the validated <code>Receipt</code> object survives extraction. The
+           full text, with whatever was on it, does not persist.</p>
+      </div>
+      <div class="cell">
+        <h3>3 · A regex sweep anyway</h3>
+        <p><code>privacy.sweep_receipt</code> redacts anything PII-shaped that got
+           into a merchant or item string, and reports how many redactions it made.</p>
+      </div>
+      <div class="cell">
+        <h3>4 · Session-only when hosted</h3>
+        <p>On a hosted Space everything stays in memory.
+           <code>privacy.is_space_environment()</code> is the single source of truth
+           both paths check before persisting anything.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="stop stop--warn">
+    <p class="eyebrow">↓ the gap, reported not hidden</p>
+    <h2>These numbers are synthetic-only</h2>
+    <p>
+      There is currently <strong>no real-receipt held-out column</strong> in the
+      benchmark. The specification calls for 10–20 real receipts, photographed and
+      hand-labelled, as the honest synthetic-versus-real tiebreaker, and that has
+      not been supplied yet.
+    </p>
+    <p>
+      So 90.5% is a real number on a real held-out split with no merchant leakage,
+      and it is a number about <em>synthetic</em> line items. A model trained and
+      tested on the same generator can share that generator's blind spots. Until
+      the real slice runs, that caveat travels with the headline.
+    </p>
+    <figure>
+      <div class="plate">
+        <img width="1050" height="600" src="../eval/loss_curve.png" loading="lazy"
+          alt="Training loss curve for the categorizer LoRA fine-tune, falling steeply and then flattening." />
+      </div>
+      <figcaption>The training run for the categorizer.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stop stop--end">
+    <p class="eyebrow">Finish · what it is built on</p>
+    <h2>Where the numbers come from</h2>
+    <dl class="specs">
+      <div class="spec"><dt>Base model</dt><dd>Qwen2.5-1.5B, LoRA fine-tuned locally, called through <code>mlx_lm.generate</code></dd></div>
+      <div class="spec"><dt>Fallback</dt><dd>A plain <code>"other"</code> category if the adapter is absent — inspectable, not a black box</dd></div>
+      <div class="spec"><dt>Training data</dt><dd>4,799 synthetic line items, split by merchant so none straddles train/test</dd></div>
+      <div class="spec"><dt>Categories</dt><dd>Twelve, from groceries and dining through to subscriptions and travel</dd></div>
+      <div class="spec"><dt>OCR</dt><dd><code>tesseract</code> locally, then <code>claude -p</code> for extraction from the OCR'd text</dd></div>
+      <div class="spec"><dt>Analysis</dt><dd>pandas. The LLM phrases; it does not compute</dd></div>
+      <div class="spec"><dt>Benchmark</dt><dd><code>training/bench_categorizer.py</code></dd></div>
+    </dl>
+  </section>
+
+</div>
+</div>
+
+<div class="wrap">
+  <section class="close">
+    <h2>Let the model write the sentence, never the number</h2>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="../writeup.md">Read the writeup</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor">or the code</a>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Receipt Auditor ·
+      <a href="../">Showcase</a> ·
+      <a href="../writeup.md">Writeup</a> ·
+      <a href="https://github.com/lyhjeremy/receipt-auditor">Source</a> ·
+      MIT © 2026 Jeremy Lee
+    </p>
+  </footer>
+</div>
+</body>
+</html>

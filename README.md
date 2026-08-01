@@ -4,6 +4,8 @@
 
 # Receipt Auditor
 
+> 📖 **Product overview:** https://lyhjeremy.github.io/receipt-auditor/overview/
+
 Photograph a stack of receipts — get reconciled, categorized spending data
 and a voice-queryable dashboard, with **PII redaction, arithmetic
 reconciliation, and a locally fine-tuned category classifier that beats
