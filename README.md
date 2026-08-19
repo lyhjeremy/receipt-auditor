@@ -4,9 +4,11 @@
 
 # Receipt Auditor
 
-> 📖 **Product overview:** https://lyhjeremy.github.io/receipt-auditor/overview/
+Design and copy follow [these standards](https://github.com/lyhjeremy/lyhjeremy/blob/main/DESIGN_STANDARDS.md).
 
-Photograph a stack of receipts — get reconciled, categorized spending data
+> **Product overview:** https://lyhjeremy.github.io/receipt-auditor/overview/
+
+Photograph a stack of receipts: get reconciled, categorized spending data
 and a voice-queryable dashboard, with **PII redaction, arithmetic
 reconciliation, and a locally fine-tuned category classifier that beats
 Claude's zero-shot guess on the exact task it was trained for.**
@@ -17,8 +19,8 @@ Handing a chatbot receipt photos and asking "how much did I spend on dining"
 means trusting it to both read numbers correctly *and* not embellish the
 answer. Receipt Auditor never lets the model do either: totals are
 reconciled in plain code against the printed total, spending answers are
-computed by pandas and only *phrased* by the model — with a guard that
-rejects the phrasing if a number gets dropped or changed — and the receipt
+computed by pandas and only *phrased* by the model, with a guard that
+rejects the phrasing if a number gets dropped or changed, and the receipt
 schema itself has no fields capable of holding cardholder PII in the first
 place.
 
@@ -31,32 +33,32 @@ place.
 - **Vision, entirely local.** No Gemini/OpenAI vision key required:
   `tesseract` OCRs each receipt photo, then `claude -p` (Claude Max
   subscription, no per-token cost) does the domain check and structured
-  extraction from the OCR'd text in one call — refusing non-receipt photos
+  extraction from the OCR'd text in one call, refusing non-receipt photos
   and flagging low-confidence reads. Same local-OCR pattern used across this
   project family after the Gemini-quota pivot documented in the shared
   `AI_GAP_PROJECTS_ROADMAP.md`.
 - **Reconciliation, in plain code.** `computed = Σ(line items) + tax`,
   compared to the printed total within a small tolerance. A mismatch is
-  never silently "corrected" — it renders flagged for a one-tap human
+  never silently "corrected". It renders flagged for a one-tap human
   review.
 - **Categorization: a locally fine-tuned classifier.** Each line item is
   categorized by a **Qwen2.5-1.5B model, LoRA fine-tuned on this laptop**
   (`app.py`'s `categorize_item` calls the trained adapter directly via
   `mlx_lm.generate`, with a plain `"other"` fallback if the adapter isn't
-  present — inspectable, not a black box).
+  present: inspectable, not a black box).
 - **PII, four layers deep.** (1) The `Receipt`/`LineItem` schemas simply have
-  no fields for cardholder name, card number, address, or loyalty id — the
+  no fields for cardholder name, card number, address, or loyalty id. The
   vision model is never even asked for them. (2) Raw OCR text is discarded;
   only the validated `Receipt` object survives extraction. (3) A
   belt-and-braces regex sweep (`privacy.sweep_receipt`) redacts anything
   PII-shaped that slipped into a merchant/item string anyway, and reports how
   many redactions it made. (4) On a hosted Space, everything is session-only
-  in memory — `privacy.is_space_environment()` is the single source of truth
+  in memory. `Privacy.is_space_environment()` is the single source of truth
   both paths check before persisting anything.
 - **The narration guard.** Spend-analysis answers are computed by pandas
   (`analysis.answer_query`); the LLM only phrases them into a sentence.
   `reconcile.assert_numbers_present` then asserts every number the model was
-  given still appears in its phrasing — if not, the caller falls back to a
+  given still appears in its phrasing, if not, the caller falls back to a
   template sentence. A hallucinated number is structurally impossible here,
   because the number never originated from the model.
 
@@ -75,7 +77,7 @@ split by merchant so no merchant straddles train/test.
 | Claude (teacher, zero-shot) | 56.0% | 0.506 | 17.7s | Max subscription |
 
 **The fine-tuned local model beats Claude's zero-shot accuracy by 34.5
-points** (90.5% vs 56.0%) — all three systems saw the identical blind prompt
+points** (90.5% vs 56.0%). All three systems saw the identical blind prompt
 (no category list given, matching the training format), so this is a fair
 comparison of what each system brings on its own, not LoRA getting a hint
 Claude didn't. Full numbers and methodology in [`eval/`](eval/) and
@@ -84,20 +86,20 @@ Claude didn't. Full numbers and methodology in [`eval/`](eval/) and
 
 **Known gap, reported not hidden:** there is currently **no real-receipt
 held-out column**. The spec calls for 10–20 of Jeremy's real receipts,
-photographed and hand-labeled, as the honest synthetic-vs-real tiebreaker —
-these numbers are synthetic-only until that's supplied.
+photographed and hand-labeled, as the honest synthetic-vs-real tiebreaker.
+These numbers are synthetic-only until that's supplied.
 
 ## Guardrails
 
-- **Domain gate** — a non-receipt photo gets a friendly refusal, not a
+- **Domain gate.** A non-receipt photo gets a friendly refusal, not a
   hallucinated card.
-- **Reconciliation** — arithmetic checked in code, never trusted from the
+- **Reconciliation.** Arithmetic checked in code, never trusted from the
   model; mismatches flagged for human review, never auto-"fixed."
-- **PII redaction** — four layers (schema, discard-raw-OCR, regex sweep,
+- **PII redaction.** Four layers (schema, discard-raw-OCR, regex sweep,
   session-only persistence), all described above with code pointers.
-- **Narration guard** — every spoken/written spend answer's numbers are
+- **Narration guard.** Every spoken/written spend answer's numbers are
   verified present after phrasing, or replaced with a template sentence.
-- **Semantic cache** — repeat spending questions are an instant, free cache
+- **Semantic cache.** Repeat spending questions are an instant, free cache
   hit.
 
 ## Files
@@ -126,9 +128,9 @@ bash training/lora_harness/train.sh mlx-community/Qwen2.5-1.5B-Instruct-4bit \
 python app.py
 ```
 
-No API key required — everything runs locally except a `claude -p` call for
+No API key required, everything runs locally except a `claude -p` call for
 extraction (uses your Claude subscription, not a metered API).
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT, see [`LICENSE`](LICENSE).
