@@ -1,136 +1,77 @@
-<p align="center">
-  <img src="assets/banner.png" alt="Receipt Auditor" width="100%">
-</p>
-
 # Receipt Auditor
+
+Turns receipt photos into reconciled, categorized spending, using a Qwen2.5-1.5B LoRA fine-tune for the categories and plain code for every number.
+
+[Project page](https://lyhjeremy.github.io/receipt-auditor/) · [Write-up](https://lyhjeremy.github.io/receipt-auditor/overview/) · [Engineering notes](writeup.md)
 
 Design and copy follow [these standards](https://github.com/lyhjeremy/lyhjeremy/blob/main/DESIGN_STANDARDS.md).
 
-> **Product overview:** https://lyhjeremy.github.io/receipt-auditor/overview/
+One of four apps that fine-tune a small local model and benchmark it against Claude, with [Cellar Scanner](https://github.com/lyhjeremy/cellar-scanner), [Race Day Copilot](https://github.com/lyhjeremy/race-day-copilot) and [Menu Decoder](https://github.com/lyhjeremy/menu-decoder).
 
-Photograph a stack of receipts: get reconciled, categorized spending data
-and a voice-queryable dashboard, with **PII redaction, arithmetic
-reconciliation, and a locally fine-tuned category classifier that beats
-Claude's zero-shot guess on the exact task it was trained for.**
+## Results
 
-## Why
+12-category spend classifier, held-out test set of 220 synthetic line items from 158 merchants that do not appear in training:
 
-Handing a chatbot receipt photos and asking "how much did I spend on dining"
-means trusting it to both read numbers correctly *and* not embellish the
-answer. Receipt Auditor never lets the model do either: totals are
-reconciled in plain code against the printed total, spending answers are
-computed by pandas and only *phrased* by the model, with a guard that
-rejects the phrasing if a number gets dropped or changed, and the receipt
-schema itself has no fields capable of holding cardholder PII in the first
-place.
+| System | N | Top-1 | Macro-F1 | Latency | Cost/1k calls |
+|---|---|---|---|---|---|
+| Base Qwen2.5-1.5B | 220 | 27.7% | 0.333 | 5.0 s | $0 |
+| Qwen2.5-1.5B + LoRA | 220 | **90.5%** | **0.893** | 4.5 s | $0 |
+| Claude, zero-shot | 150 | 56.0% | 0.506 | 17.7 s | Max subscription |
 
-## How it works
+Read the Claude row with care (details under [Limitations](#limitations)): Claude answered in prose that the scorer parsed by substring match, which undercounts it, and it ran with file access inside the repo, so most answers had seen the category list. The LoRA figure is exact; the gap is smaller than 34.5 points.
 
-<p align="center">
-  <img src="assets/architecture.png" alt="Receipt Auditor pipeline" width="760">
-</p>
+![Confusion matrix for the LoRA model across 12 categories; the largest errors are household predicted as other, travel as transport, and transport as fuel](eval/confusion_matrix.png)
 
-- **Vision, entirely local.** No Gemini/OpenAI vision key required:
-  `tesseract` OCRs each receipt photo, then `claude -p` (Claude Max
-  subscription, no per-token cost) does the domain check and structured
-  extraction from the OCR'd text in one call, refusing non-receipt photos
-  and flagging low-confidence reads. Same local-OCR pattern used across this
-  project family after the Gemini-quota pivot documented in the shared
-  `AI_GAP_PROJECTS_ROADMAP.md`.
-- **Reconciliation, in plain code.** `computed = Σ(line items) + tax`,
-  compared to the printed total within a small tolerance. A mismatch is
-  never silently "corrected". It renders flagged for a one-tap human
-  review.
-- **Categorization: a locally fine-tuned classifier.** Each line item is
-  categorized by a **Qwen2.5-1.5B model, LoRA fine-tuned on this laptop**
-  (`app.py`'s `categorize_item` calls the trained adapter directly via
-  `mlx_lm.generate`, with a plain `"other"` fallback if the adapter isn't
-  present: inspectable, not a black box).
-- **PII, four layers deep.** (1) The `Receipt`/`LineItem` schemas simply have
-  no fields for cardholder name, card number, address, or loyalty id. The
-  vision model is never even asked for them. (2) Raw OCR text is discarded;
-  only the validated `Receipt` object survives extraction. (3) A
-  belt-and-braces regex sweep (`privacy.sweep_receipt`) redacts anything
-  PII-shaped that slipped into a merchant/item string anyway, and reports how
-  many redactions it made. (4) On a hosted Space, everything is session-only
-  in memory. `Privacy.is_space_environment()` is the single source of truth
-  both paths check before persisting anything.
-- **The narration guard.** Spend-analysis answers are computed by pandas
-  (`analysis.answer_query`); the LLM only phrases them into a sentence.
-  `reconcile.assert_numbers_present` then asserts every number the model was
-  given still appears in its phrasing, if not, the caller falls back to a
-  template sentence. A hallucinated number is structurally impossible here,
-  because the number never originated from the model.
+## Method
 
-## The fine-tune, honestly benchmarked
+- **Data.** 4,799 synthetic line items generated with `claude -p` in real point-of-sale styles (`SBUX #4821`, `WM SUPERCENTER #2847`, `TST* JOE'S PIZZA`). Split by merchant into 4,309 train, 270 validation and 220 test, with a leakage check (`training/prep_categorizer.py`, `eval/dataset_card.json`).
+- **Fine-tune.** LoRA on `mlx-community/Qwen2.5-1.5B-Instruct-4bit` with MLX on Apple Silicon: batch 4, 12 layers, 800 iterations, learning rate 1.5e-4. Validation loss went from 5.085 to 0.419 (`eval/loss_curve.png`).
+- **Benchmark.** Base, LoRA and Claude on the same prompt (merchant and item, no category list). Raw generations are in `eval/raw_outputs.json`; scores in `eval/benchmark.md`.
+- **Extraction.** `tesseract` OCR, then one `claude -p` call per receipt that rejects non-receipts, extracts Pydantic-validated fields and flags low-confidence reads.
+- **Reconciliation.** Line items plus tax are compared with the printed total, tolerance the larger of $0.02 or 0.5% (`src/reconcile.py`). A mismatch is flagged for human review, never corrected automatically.
+- **Narration guard.** Spending questions are parsed into a structured query and answered by pandas (`src/analysis.py`). The LLM only phrases the answer; `assert_numbers_present` checks every number survived, otherwise a template sentence is used. Repeat questions hit a semantic cache.
+- **PII.** The schema has no fields for cardholder name, card number, address or loyalty ID; raw OCR text is discarded; `privacy.sweep_receipt` redacts card-like digit runs, emails and phone numbers and counts the redactions; hosted sessions stay in memory.
 
-12-category spend classifier (groceries, dining, coffee_snacks, transport,
-fuel, health, household, clothing, entertainment, subscriptions_utilities,
-travel, other), trained on 4,799 synthetic line items across realistic POS
-merchant styles ("SBUX #4821", "WM SUPERCENTER #2847", "TST* JOE'S PIZZA"),
-split by merchant so no merchant straddles train/test.
+## Stack
 
-| System | Top-1 acc | Macro-F1 | Latency | Cost/1k |
-|---|---|---|---|---|
-| Base Qwen2.5-1.5B (no fine-tune) | 27.7% | 0.333 | 5.0s | $0 |
-| **+ LoRA (this project)** | **90.5%** | **0.893** | 4.5s | $0 |
-| Claude (teacher, zero-shot) | 56.0% | 0.506 | 17.7s | Max subscription |
+Python, Gradio, MLX (`mlx_lm`), Qwen2.5-1.5B-Instruct, Pydantic, pandas, tesseract, Claude via `claude -p`.
 
-**The fine-tuned local model beats Claude's zero-shot accuracy by 34.5
-points** (90.5% vs 56.0%). All three systems saw the identical blind prompt
-(no category list given, matching the training format), so this is a fair
-comparison of what each system brings on its own, not LoRA getting a hint
-Claude didn't. Full numbers and methodology in [`eval/`](eval/) and
-[`writeup.md`](writeup.md), generated by
-[`training/bench_categorizer.py`](training/bench_categorizer.py).
-
-**Known gap, reported not hidden:** there is currently **no real-receipt
-held-out column**. The spec calls for 10–20 of Jeremy's real receipts,
-photographed and hand-labeled, as the honest synthetic-vs-real tiebreaker.
-These numbers are synthetic-only until that's supplied.
-
-## Guardrails
-
-- **Domain gate.** A non-receipt photo gets a friendly refusal, not a
-  hallucinated card.
-- **Reconciliation.** Arithmetic checked in code, never trusted from the
-  model; mismatches flagged for human review, never auto-"fixed."
-- **PII redaction.** Four layers (schema, discard-raw-OCR, regex sweep,
-  session-only persistence), all described above with code pointers.
-- **Narration guard.** Every spoken/written spend answer's numbers are
-  verified present after phrasing, or replaced with a template sentence.
-- **Semantic cache.** Repeat spending questions are an instant, free cache
-  hit.
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `app.py` | Gradio app (batch upload → reconciled grid → dashboard → voice query) |
-| `scripts/gen_line_items.py` | Overnight synthetic corpus generator |
-| `training/prep_categorizer.py` | Merchant-split, leakage-checked classifier dataset |
-| `training/bench_categorizer.py` | 3-way honest benchmark (base/LoRA/Claude) |
-| `src/reconcile.py` | Totals reconciliation + the narration guard |
-| `src/privacy.py` | The four PII layers, wired together |
-| `src/analysis.py` | Deterministic pandas spend queries |
-| `src/` | Vendored toolkit (llm, vision, guardrails, context, cache) |
-| `eval/` | Benchmark results, confusion matrix, loss curve, dataset card |
-
-## Running it
+## How to run
 
 ```bash
 pip install -r requirements.txt
-./setup_ocr.sh                          # tesseract + language packs (one-time)
-python scripts/gen_line_items.py        # synthetic corpus (overnight, resumable)
+./setup_ocr.sh                          # tesseract and language packs, one time
+python scripts/gen_line_items.py        # synthetic corpus (long-running, resumable)
 python training/prep_categorizer.py     # merchant-split train/valid/test
 bash training/lora_harness/train.sh mlx-community/Qwen2.5-1.5B-Instruct-4bit \
     data/lora training/adapters 4 12 800 1.5e-4 768
 python app.py
 ```
 
-No API key required, everything runs locally except a `claude -p` call for
-extraction (uses your Claude subscription, not a metered API).
+No API key is needed. Extraction uses `claude -p` on a Claude subscription. Without a trained adapter, the app's categorizer falls back to `other`. Tests: `pytest tests/` (19 tests).
+
+## Repo layout
+
+| Path | Contents |
+|---|---|
+| `app.py` | Gradio app: batch upload, reconciled grid, dashboard, voice query |
+| `scripts/gen_line_items.py` | Synthetic corpus generator |
+| `training/prep_categorizer.py` | Merchant-split, leakage-checked dataset |
+| `training/bench_categorizer.py` | Three-way benchmark (reconstructed, see below) |
+| `src/reconcile.py` | Totals reconciliation and the narration guard |
+| `src/privacy.py` | PII layers |
+| `src/analysis.py` | pandas spend queries |
+| `src/` | Shared toolkit: llm, vision, guardrails, context, cache |
+| `eval/` | Benchmark results, raw outputs, confusion matrix, loss curve, dataset card |
+
+## Limitations
+
+- **Synthetic data only.** The spec calls for 10 to 20 real, hand-labeled receipts as a final test; none have been added.
+- **Noisy labels.** The labels came from the same generator as the training data and are inconsistent in places (a CVS first-aid kit is `other`; Shell unleaded is `fuel` on one row and `transport` on another). The LoRA model learned those habits; Claude's more reasonable answers on such rows count as errors.
+- **Claude scoring.** The scorer takes the longest category name found anywhere in Claude's prose answer, and 83 of Claude's 150 answers mention more than one category, so 56.0% understates Claude.
+- **Claude saw the categories.** `claude -p` ran from inside the repo with file access; 101 of its 150 answers cite `src/schemas.py`. Menu Decoder fixed the same issue by running from a scratch directory; this benchmark was not rerun.
+- **Reconstructed script.** The script that produced `eval/benchmark.md` was lost before it was committed. `training/bench_categorizer.py` reproduces the LoRA figure exactly and the base and Claude figures approximately (about 26% and 51%).
 
 ## License
 
-MIT, see [`LICENSE`](LICENSE).
+[MIT](LICENSE) © 2026 Jeremy Lee

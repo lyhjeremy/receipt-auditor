@@ -1,185 +1,79 @@
-<p align="center">
-  <img src="assets/banner.png" alt="Receipt Auditor" width="100%">
-</p>
+# Receipt Auditor: a finance app where the model never does the arithmetic
 
-# Receipt Auditor: a finance app where the model is never allowed to do arithmetic
+Receipt Auditor turns photographed receipts into reconciled, categorized spending. A Qwen2.5-1.5B model with a LoRA adapter, trained on a laptop, puts each line item into one of 12 categories at 90.5% top-1 accuracy on a held-out test set. Claude, asked the same question zero-shot, scored 56.0%. Every number the user sees comes from code, not from a language model.
 
-*Photograph a stack of receipts, get reconciled spending data, and a
-locally fine-tuned classifier that categorizes each line item better than
-Claude does cold.*
+Design and copy follow [these standards](https://github.com/lyhjeremy/lyhjeremy/blob/main/DESIGN_STANDARDS.md).
 
 ## The idea
 
-Ask a chatbot "how much did I spend on dining last month" from a pile of
-receipt photos, and you're trusting it to read every number correctly *and*
-report the sum honestly, two separate ways for it to be confidently wrong.
-Receipt Auditor is built around a different rule: **the model narrates, the
-code computes.** Totals are reconciled against the printed total in plain
-Python. Spend queries are answered by pandas. The model only ever phrases a
-number it was handed, and a guard checks that the number survived phrasing
-unchanged.
+If you hand a chatbot a pile of receipt photos and ask how much you spent on dining last month, it has two chances to be wrong: reading the numbers and adding them up. Receipt Auditor splits the work so the model never gets the second chance. Totals are reconciled against the printed total in Python. Spending questions are answered by pandas. The model phrases a number it was handed, and a guard checks that the number came through unchanged.
 
-It's also a testbed for five specific engineering skills, same as the rest
-of this project family: fine-tuning, guardrails, multimodal input, context
-engineering, and token optimization. Each with a real number attached, not
-a bullet point.
+It is one of four apps that each fine-tune a small local model and benchmark it against Claude. The others are [Cellar Scanner](https://github.com/lyhjeremy/cellar-scanner), [Race Day Copilot](https://github.com/lyhjeremy/race-day-copilot) and [Menu Decoder](https://github.com/lyhjeremy/menu-decoder).
 
-## No Gemini key, no problem
+## Extraction without a vision API
 
-Like its sibling projects, this one was originally spec'd around Gemini's
-vision API for receipt extraction. Two API keys tested in Session 1 both
-authenticated but had zero free-tier quota provisioned. A
-project-configuration issue on Google's side, not a rate limit that clears.
-Rather than block on a third key, extraction was rebuilt to be **fully
-local**: `tesseract` OCRs the receipt photo, then `claude -p` (my Claude
-subscription, no per-token API cost) does the domain check and structured
-field extraction from the OCR'd text in one call, refusing non-receipt
-photos, flagging low-confidence reads. Zero external dependency, same
-guarantees.
+The project was first planned around Gemini's vision API. Two API keys tested in the first session both authenticated but had no free-tier quota provisioned, which was a project-configuration problem on Google's side rather than a rate limit. Instead of waiting on a third key, I made extraction local: `tesseract` reads the photo, then one `claude -p` call on my Claude subscription checks that the text is a receipt and pulls structured fields. It refuses photos that aren't receipts and flags low-confidence reads.
 
-## Reconciliation and the narration guard: arithmetic the model never touches
+## Reconciliation and the narration guard
 
-Every receipt's computed total (`Σ line items + tax`) is checked against the
-printed total in plain code, with a small tolerance for rounding noise. A
-mismatch renders flagged for a one-tap human correction. The model never
-gets to quietly "fix" a total that doesn't add up.
+For each receipt, the app adds the line items and tax and compares the sum with the printed total. The tolerance is the larger of 2 cents or 0.5% of the total. A mismatch is shown flagged for a one-tap correction. Nothing adjusts a total to make it agree.
 
-The same discipline extends to spend analysis. When you ask "how much did I
-spend on dining," pandas computes the real number from the parsed receipts;
-the LLM's only job is to phrase it as a sentence. After phrasing,
-`assert_numbers_present` checks that every number the model was given still
-appears in its output. Verbatim, allowing only reasonable rounding (`$42`
-vs `$42.00`, not a changed value). If a number gets dropped or altered in
-phrasing, the caller falls back to a plain template sentence instead of
-shipping the LLM's version. A hallucinated spend total is structurally
-impossible here, because the number the model speaks was never the model's
-to invent.
+Spending questions work the same way. "How much did I spend on dining" is parsed into a structured `Query` (metric, category, merchant, date range) and answered by pandas. The LLM sees the question and the final number, never the dataframe, and writes one sentence. `assert_numbers_present` then checks that every number it was given appears in that sentence, within a cent ("$42" matches "$42.00"; a changed value does not). If a number was dropped or altered, the app shows a template sentence instead. A spending total the model made up can't reach the screen, because the model never produces the total. Asking the same question twice hits a semantic cache and skips the parse and phrasing calls.
 
-## Privacy: four layers, not a policy statement
+## Privacy in four layers
 
-1. **Schema-as-guardrail.** `Receipt` and `LineItem` simply have no fields
-   for cardholder name, card number, address, or loyalty id. The vision
-   model is never even asked to extract them. The cheapest PII control is a
-   schema that can't hold PII.
-2. **Raw OCR text is discarded.** Only the validated, schema-checked
-   `Receipt` object survives extraction; the OCR'd text itself is never
-   cached, logged, or persisted anywhere.
-3. **Belt-and-braces sweep.** `privacy.sweep_receipt` runs a regex redaction
-   pass over every merchant/item string before it touches cache or
-   persistence. Long digit runs (card fragments) get last-4-masked, emails
-   and phone numbers get replaced with `[redacted]`. The redaction count is
-   surfaced, not hidden.
-4. **Persistence policy.** `privacy.is_space_environment()` is the single
-   source of truth both the local and hosted paths check: on a Space,
-   receipts live in memory for the session and nothing touches disk; locally
-   a git-ignored ledger opt-in is allowed.
+1. **The schema.** `Receipt` and `LineItem` have no fields for cardholder name, card number, address or loyalty ID. Extraction never asks for them.
+2. **Raw OCR text is discarded.** Only the validated `Receipt` object survives extraction. The OCR text is not cached, logged or stored.
+3. **A regex sweep.** `privacy.sweep_receipt` runs over every merchant and item string before anything is cached or stored. Long digit runs are masked to the last four, and emails and phone numbers become `[redacted]`. The number of redactions is reported.
+4. **Persistence.** `privacy.is_space_environment()` is the one check both the local and hosted paths use. On a hosted Space, receipts live in memory for the session and nothing is written to disk. Locally, a git-ignored ledger is opt-in.
 
-## The fine-tune: a classifier that beat the teacher by 34 points
+## The fine-tune
 
-The task: given a merchant string and a line-item description, predict the
-spend category: 12 classes, from `groceries` to `subscriptions_utilities`.
-**4,799 synthetic line items** generated via `claude -p` across deliberately
-varied POS abbreviation styles real receipts actually use ("SBUX #4821", "WM
-SUPERCENTER #2847", "TST* JOE'S PIZZA", full readable names, generic local
-merchants), split **by merchant** (not by row) so no merchant's items
-straddle train and test: 2,537 distinct merchants in train, 158 in test,
-zero overlap.
+The task: given a merchant string and a line-item description, predict one of 12 categories: groceries, dining, coffee_snacks, transport, fuel, health, household, clothing, entertainment, subscriptions_utilities, travel and other.
 
-A Qwen2.5-1.5B model was LoRA fine-tuned locally (MLX, Apple Silicon, same
-hyperparameters as this project family's other classifiers: batch 4, 12
-layers, 800 iterations, lr 1.5e-4), training loss fell from an initial
-val loss of 5.085 to 0.419 over 800 iterations
-(`eval/loss_curve.png`). Benchmarked three ways on a held-out 220-row test
-set, **all three systems given the identical blind prompt** (merchant +
-item, no category list in-context, matching what the LoRA model actually
-trained on, the same methodology this project family used for Cellar
-Scanner's variety classifier):
+**Data.** `scripts/gen_line_items.py` generated 4,799 synthetic line items with `claude -p`, varying the abbreviation styles real receipts use (`SBUX #4821`, `WM SUPERCENTER #2847`, `TST* JOE'S PIZZA`), plus full readable names and generic local shops. `training/prep_categorizer.py` splits by merchant, not by row, so no merchant has items on both sides: 2,537 merchants and 4,309 rows in train, 128 and 270 in validation, 158 and 220 in test. The leakage check passed (`eval/dataset_card.json`).
 
-| System | N | Top-1 acc | Macro-F1 | Latency | Cost/1k calls |
+**Training.** LoRA on Qwen2.5-1.5B-Instruct (4-bit) with MLX on Apple Silicon, using the same settings as the other apps in the series: batch 4, 12 layers, 800 iterations, learning rate 1.5e-4. Validation loss fell from 5.085 to 0.419 (`eval/loss_curve.png`).
+
+**Benchmark.** All three systems got the same prompt, merchant plus item with no category list, which is the format the LoRA model was trained on. Base and LoRA ran on all 220 test rows; Claude ran on the first 150 after a seeded shuffle.
+
+| System | N | Top-1 | Macro-F1 | Latency | Cost/1k calls |
 |---|---|---|---|---|---|
-| Base Qwen2.5-1.5B | 220 | 27.7% | 0.333 | 5.0s | $0 |
-| **+ LoRA (this project)** | 220 | **90.5%** | **0.893** | 4.5s | $0 |
-| Claude (teacher, zero-shot) | 150 | 56.0% | 0.506 | 17.7s | Max subscription |
+| Base Qwen2.5-1.5B | 220 | 27.7% | 0.333 | 5.0 s | $0 |
+| Qwen2.5-1.5B + LoRA | 220 | **90.5%** | **0.893** | 4.5 s | $0 |
+| Claude, zero-shot | 150 | 56.0% | 0.506 | 17.7 s | Max subscription |
 
-The headline: **the fine-tuned local model's Top-1 accuracy (90.5%) beats
-Claude's zero-shot Top-1 (56.0%) by 34.5 points**, and both numbers come
-from the exact same blind prompt, so this isn't LoRA getting a vocabulary
-hint Claude didn't see. Fine-tuning bought a **3.3x lift** over the
-untrained base model. This is a narrower, more memorizable task than Cellar
-Scanner's 40-variety wine guess (12 classes on a synthetic corpus with
-consistent internal structure), which is exactly why the gap over a
-zero-shot frontier model is so much larger here. Claude has to guess a
-category *name* cold with no enumerated options, while the LoRA model
-learned the label space directly from its training signal.
-
-The confusion matrix (`eval/confusion_matrix.png`) shows where the LoRA
-model still slips: `household` items called `other` (7 of its confusions:
-genuinely ambiguous items like generic home-goods purchases), `travel`
-confused with `transport` and `fuel` (a car-adjacent, geographically
-overlapping trio even for a human categorizing a credit card statement), and
-a few `transport`/`fuel` mix-ups in both directions.
+Fine-tuning took the base model from 27.7% to 90.5%, a 3.3x lift. The LoRA model is also about four times faster than a `claude -p` call and costs nothing per call.
 
 <p align="center">
-  <img src="eval/confusion_matrix.png" alt="Confusion matrix across all 12 spend categories" width="600">
+  <img src="eval/confusion_matrix.png" alt="Confusion matrix for the LoRA model across 12 categories; the largest errors are household predicted as other, travel predicted as transport, and transport predicted as fuel" width="600">
 </p>
 
-**One gap reported, not hidden:** there is **no real-receipt held-out
-column**. The spec (`RECEIPT_AUDITOR_SPEC.md` §5) calls for 10–20 of
-Jeremy's actual receipts, vision-extracted and hand-labeled, as the honest
-synthetic-vs-real tiebreaker, precisely because Claude both labeled the
-synthetic training data *and* is the zero-shot reference column, so a
-same-distribution benchmark alone can't fully rule out the synthetic corpus
-being easier than real-world receipts. That set hasn't been supplied yet;
-the 90.5%/56.0%/27.7% numbers above are synthetic-only, and the writeup says
-so rather than presenting them as the final word.
+The LoRA model's largest errors are household called other (7 times), travel called transport (4) and transport called fuel (4), then other called health (2) and fuel called transport (2). Household and other overlap on generic home goods, and travel, transport and fuel overlap for anything involving a car.
 
-## Context engineering and token optimization, measured not claimed
+## How much of the gap is real
 
-Voice and text spending questions are parsed into a structured `Query`
-(metric, category, merchant, date range) via the same
-`generate_validated` retry loop every project in this family shares, then
-answered entirely by pandas. The LLM sees the question and the final
-number, never the underlying dataframe. Repeat questions ("how much did I
-spend on dining this month," asked twice) hit a semantic cache keyed on
-question similarity, avoiding a repeat parse-and-phrase round trip.
+The 34.5-point gap between the LoRA model and Claude is smaller than it looks, for four reasons I found when I went back through the raw outputs in `eval/raw_outputs.json`.
 
-## What building this taught me
+**The labels are noisy.** They come from the same generator as the training data and are not consistent. A first-aid kit and cold-relief caplets from CVS are both labeled `other`. A Starbucks latte is `dining`. Shell unleaded is `fuel` on one test row and `transport` on another. The LoRA model learned these habits; Claude answered `health`, `coffee_snacks` and `fuel`, which a person would mostly accept, and was marked wrong.
 
-- **Two real bugs, caught immediately by the test suite, not in
-  production.** The `Receipt` schema originally risked a `date` field
-  shadowing Python's `datetime.date` type. A classic naming collision that
-  breaks Pydantic model construction outright the moment both the field name
-  and the type import collide in the same scope. And the narration guard's
-  original number-extraction regex could match a bare trailing comma left
-  over from a comma-separated sentence (`"...$120.00, up from..."`) and crash
-  on `float("")` when trying to parse it as a number. Both were caught by
-  writing realistic test cases *before* trusting the code. A sentence with
-  multiple comma-separated numbers for the second one, and both are fixed;
-  19 tests pass across reconciliation, privacy, and analysis.
-- **A benchmark timeout that turned out to be someone else's CPU load, not
-  a bug in this project.** The first live benchmark run hit repeated
-  90-second timeouts on `mlx_lm.generate` calls that normally take a few
-  seconds. Instead of assuming the model or the harness was broken, checking
-  system load first (`uptime`, `ps aux` sorted by CPU) showed two unrelated
-  VS Code helper processes consuming 97% and 65% CPU on this 10-core
-  machine, nothing to do with this benchmark. Raising the subprocess
-  timeout to 240 seconds (rather than "fixing" code that wasn't broken) let
-  the run complete cleanly.
-- **A logging path that silently wrote nothing, caught before it mattered.**
-  `train.sh`'s `tee` command was supposed to write the full training log to
-  `training/adapters/train.log` for the loss-curve script to parse, but the
-  file came out at 0 bytes even though training itself completed
-  successfully, likely a quirk of piping through a Google-Drive-synced
-  directory. The same content had already landed in the outer run log from
-  a different redirect, so the loss curve was reconstructed from that
-  instead of being silently lost.
+**The scorer undercounts Claude.** Claude answered in full sentences, such as "would fall under the **`health`** category ... distinct from `household` or `other`". The scorer takes the longest category name that appears anywhere in the answer, which here is `household`. 83 of Claude's 150 answers mention more than one category.
 
-None of these would have surfaced from reading the code alone. Every one
-came from actually running the pipeline and treating an unexpected number,
-timeout, or empty file as a bug report worth investigating, not noise to
-retry past.
+**Claude saw the category list.** The prompt had none, but `claude -p` ran from inside the repo with file access, and 101 of its 150 answers cite `src/schemas.py`. Menu Decoder hit the same problem and fixed it by running the CLI from a scratch directory. This benchmark has not been rerun that way.
+
+**The scoring script is a reconstruction.** The script that produced `eval/benchmark.md` was lost before it was committed. `training/bench_categorizer.py` was rebuilt against the stored raw outputs. It reproduces the LoRA figure exactly, because those outputs are single category names, and it reproduces the test-set order exactly, because the confusion pairs match. For base and Claude, whose outputs are prose, it gets about 26% and 51% against the published 27.7% and 56.0%.
+
+There is also no real-receipt test set. The spec calls for 10 to 20 of my own receipts, photographed and hand-labeled. Claude both labeled the training data and is a column in the benchmark, so a test on the same synthetic distribution can't rule out that real receipts are harder. Until that set exists, every figure here is about synthetic data.
+
+What the result does support is narrower: a 1.5B model with a small adapter learns a fixed 12-label scheme well enough to replace a frontier-model call for this step, at a quarter of the latency and no per-call cost.
+
+## What building it taught me
+
+- **The tests caught two bugs before anything shipped.** A field named `date` on the `Receipt` schema risked shadowing Python's `datetime.date`, which breaks Pydantic model construction when both names are in the same scope. And the narration guard's number regex could match a bare comma left after a number (`"...$120.00, up from..."`) and crash on `float("")`. A test sentence with several comma-separated numbers caught the second one. Both are fixed, and 19 tests pass across reconciliation, privacy and analysis.
+- **A benchmark timeout was another program's CPU load.** The first benchmark run hit repeated 90-second timeouts on `mlx_lm.generate` calls that normally take a few seconds. Checking system load (`uptime`, `ps aux` sorted by CPU) showed two unrelated VS Code helper processes at 97% and 65% CPU on a 10-core machine. Raising the subprocess timeout to 240 seconds let the run finish without changing any code.
+- **A training log came out empty.** `train.sh` pipes through `tee` to `training/adapters/train.log` for the loss-curve script, but the file was 0 bytes even though training finished, probably because of the Google Drive-synced folder. The same output had gone to an outer run log through a different redirect, so the loss curve was rebuilt from that.
+- **Read the raw outputs before trusting a benchmark.** The noisy labels, the scoring problem and the schema leak in the previous section all came from reading `eval/raw_outputs.json` row by row, well after the headline number was published.
 
 ---
 
-*Built by [Jeremy Lee](https://github.com/lyhjeremy). Code, benchmark, and
-dataset card: [github.com/lyhjeremy/receipt-auditor](https://github.com/lyhjeremy/receipt-auditor).*
+Built by [Jeremy Lee](https://github.com/lyhjeremy). Code, benchmark and dataset card: [github.com/lyhjeremy/receipt-auditor](https://github.com/lyhjeremy/receipt-auditor).

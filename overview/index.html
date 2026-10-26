@@ -3,55 +3,57 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Receipt Auditor: 90.5% against Claude's 56.0%, and a number the model cannot hallucinate</title>
-<meta name="description" content="Photograph receipts, get reconciled and categorized spend. A locally fine-tuned classifier hits 90.5% against Claude's zero-shot 56.0%, and spending answers are computed by pandas so a made-up number is structurally impossible." />
-<meta name="theme-color" content="#EDEDE7" />
+<title>Receipt Auditor: a 1.5B LoRA classifier at 90.5% against Claude zero-shot at 56.0%</title>
+<meta name="description" content="Receipt photos in, reconciled and categorized spending out. A Qwen2.5-1.5B model LoRA fine-tuned on a laptop sorts line items into 12 spend categories at 90.5% top-1 on a merchant-split test set, against 56.0% for Claude zero-shot." />
+<meta name="theme-color" content="#E9EAE6" />
 <meta property="og:title" content="Receipt Auditor" />
-<meta property="og:description" content="A 1.5B local classifier beating Claude zero-shot by 34.5 points, and an architecture where hallucinated numbers cannot occur." />
+<meta property="og:description" content="A 1.5B model fine-tuned on a laptop scores 90.5% on 12 spend categories; Claude zero-shot scores 56.0%. Totals are reconciled in code and spending answers come from pandas." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://lyhjeremy.github.io/receipt-auditor/overview/" />
+<link href="" rel="stylesheet" />
 <style>
-@font-face{font-family:"Source Serif 4";src:url("../fonts/SourceSerif4-400.woff2")format("woff2");font-weight:400;font-display:swap}
-@font-face{font-family:"Source Serif 4";src:url("../fonts/SourceSerif4-600.woff2")format("woff2");font-weight:600;font-display:swap}
-@font-face{font-family:"IBM Plex Sans";src:url("../fonts/IBMPlexSans-400.woff2")format("woff2");font-weight:400;font-display:swap}
-@font-face{font-family:"IBM Plex Sans";src:url("../fonts/IBMPlexSans-600.woff2")format("woff2");font-weight:600;font-display:swap}
-@font-face{font-family:"IBM Plex Mono";src:url("../fonts/IBMPlexMono-400.woff2")format("woff2");font-weight:400;font-display:swap}
-
   :root {
-    --paper: #EDEDE7;
-    --card: #F5F5F0;
-    --plate: #F5F5F0;
-    --ink: #1C1E1B;
-    --ink2: #3d3d55;
-    --muted: #52564E;
-    --rule: #C6C7BF;
-    --accent: #2C5852;
-    --accent2: #8C3A1E;
-    --link: #2C5852;
-    --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-    --sans: 'Source Sans 3', -apple-system, system-ui, sans-serif;
-    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
-    --shadow: 0 1px 2px rgba(26,26,46,.05), 0 10px 34px rgba(26,26,46,.07);
+    --paper: #E9EAE6;
+    --card: #F2F3EF;
+    --plate: #F2F3EF;
+    --ink: #191B1A;
+    --ink2: #4B504D;
+    --muted: #4B504D;
+    --rule: #C3C6C1;
+    --accent: #2F6243;
+    --accent2: #7C5A26;
+    --link: #2F6243;
+    --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    --sans: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+    --display: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+    --edge: #727773;
     --spine:  92px;
     --col:    min(100% - 2.6rem, 62rem);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper: #14141f;
-      --card: #1c1c2a;
-      --plate: #f7f4ec;
-      --ink: #F2EFE6;
-      --ink2: #C9C4B6;
-      --muted: #918B7D;
-      --rule: #33313f;
-      --accent: #34D399;
-      --accent2: #22D3EE;
-      --link: #E0899A;
-      --shadow: 0 1px 2px rgba(0,0,0,.32), 0 10px 34px rgba(0,0,0,.4);
+      --paper: #161817;
+      --card: #1F2220;
+      --plate: #1F2220;
+      --ink: #E3E5E1;
+      --ink2: #A0A6A1;
+      --muted: #A0A6A1;
+      --rule: #373B38;
+      --accent: #7DC096;
+      --accent2: #CBA668;
+      --link: #7DC096;
+      --edge: #686E6A;
     }
   }
 
-  * { box-sizing: border-box; }
+  @font-face{font-family:"Source Serif 4";src:url("../fonts/SourceSerif4-400.woff2")format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:"Source Serif 4";src:url("../fonts/SourceSerif4-600.woff2")format("woff2");font-weight:600;font-display:swap}
+  @font-face{font-family:"IBM Plex Sans";src:url("../fonts/IBMPlexSans-400.woff2")format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:"IBM Plex Sans";src:url("../fonts/IBMPlexSans-600.woff2")format("woff2");font-weight:600;font-display:swap}
+  @font-face{font-family:"IBM Plex Mono";src:url("../fonts/IBMPlexMono-400.woff2")format("woff2");font-weight:400;font-display:swap}
+
+  * { box-sizing: border-box; border-radius: 0; }
   html { scroll-behavior: smooth; }
   body {
     margin: 0; background: var(--paper); color: var(--ink);
@@ -210,60 +212,94 @@
     html { scroll-behavior: auto; }
     .btn { }
   }
+  @font-face{font-family:"IBM Plex Sans Condensed";src:url("../fonts/IBMPlexSansCondensed-600.woff2")format("woff2");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:"IBM Plex Mono";src:url("../fonts/IBMPlexMono-600.woff2")format("woff2");font-weight:600;font-style:normal;font-display:swap}
 
+  .btn:hover { transform: none; background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  .pull { border: 1px solid var(--edge); border-left: 1px solid var(--edge); background: transparent; }
+  .term { background: var(--card); color: var(--ink); border: 1px solid var(--rule); }
+  .term .c { color: var(--muted); } .term .g { color: var(--accent2); } .term .y { color: var(--accent); }
+  .logo, .hero h1, h2, .claim .n, .bignum { font-family: var(--display); }
+
+  /* Workshop: an engineering spec sheet. Condensed headings, mono labels, numbered sections. */
+  .masthead { border: 1px solid var(--edge); padding: 10px 14px; margin-top: 24px; justify-content: space-between; }
+  .logo { font-weight: 600; font-size: 19px; letter-spacing: 0; }
+  .tagline { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+  .hero h1 { font-weight: 600; font-size: clamp(40px, 6.4vw, 78px); letter-spacing: -.02em; line-height: 1; max-width: 17ch; }
+  .kicker { font-family: var(--mono); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+  h2 { font-weight: 600; letter-spacing: -.015em; font-size: clamp(28px, 3.6vw, 38px); }
+  .claims { border: 1px solid var(--edge); gap: 0; }
+  .claim, .claim:first-child, .claim:nth-child(2) { border-top: 0; border-bottom: 1px solid var(--rule); padding: 18px 20px; }
+  @media (min-width: 760px) { .claim:nth-child(odd) { border-right: 1px solid var(--rule); } }
+  .claim .n { font-family: var(--mono); font-weight: 600; font-size: 34px; letter-spacing: -.02em; }
+  .bignum { font-family: var(--mono); font-weight: 600; letter-spacing: -.04em; }
+  .route { counter-reset: sec; }
+  .route::before { width: 1px; background: var(--edge); }
+  .stop { counter-increment: sec; }
+  .stop::before { content: counter(sec, decimal-leading-zero); width: auto; height: auto; left: 0; top: 4px;
+                  border: 0; background: none; font: 600 13px/1 var(--mono); color: var(--accent); padding: 4px 0;
+                  background: var(--paper); }
+  .stop--key::before, .stop--warn::before, .stop--end::before { background: var(--paper); border: 0; }
+  .stop--end::before { color: var(--ink); }
+
+
+  .tape { margin-top: 30px; border: 1px solid var(--edge); background: var(--card); font-family: var(--mono); }
+  .tape-head { padding: 12px 16px; border-bottom: 1px dashed var(--edge); font: 600 12px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .tape table { min-width: 600px; font-family: var(--mono); font-size: 13.5px; }
+  .tape td, .tape th { border-bottom: 1px dashed var(--rule); padding: 10px 14px; vertical-align: top; }
+  .tape td.item { color: var(--ink); }
+  .tape td.item span { display: block; color: var(--muted); font-size: 12px; }
+  .tape td.hit { color: var(--accent); font-weight: 600; }
+  .tape td.diff { color: var(--accent2); font-weight: 600; }
+  .tape .tape-foot { margin: 0; max-width: none; padding: 10px 16px; font-family: var(--sans); font-size: 14px; color: var(--muted); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="masthead">
-    <div class="logo"><span class="dot" aria-hidden="true"></span>Receipt Auditor</div>
-    <div class="tagline">receipts in, reconciled spend out</div>
+    <div class="logo">Receipt Auditor</div>
+    <div class="tagline">fine-tuning series / LoRA vs Claude</div>
   </header>
 
   <section class="hero">
-    <p class="kicker">The risk with receipts is not bad OCR. It is a confident wrong total.</p>
-    <h1>So the model is never allowed to produce a number.</h1>
+    <p class="kicker">Local LoRA fine-tune, benchmarked against Claude</p>
+    <h1>A 1.5B model fine-tuned on a laptop sorts receipt items at 90.5%. Claude zero-shot: 56.0%.</h1>
 
     <p class="hero-sub">
-      Photograph a stack of receipts and get reconciled, categorized spending you
-      can query out loud. Totals are checked in plain code against the printed
-      total. Spending answers are computed by <strong>pandas</strong> and only
-      <em>phrased</em> by the model, with a guard that rejects the phrasing if a
-      number changes. And the categorizer is a <strong>1.5B model fine-tuned on
-      this laptop</strong> that beats Claude's zero-shot accuracy by
-      <strong>34.5 points</strong>.
+      Receipt Auditor reads photographed receipts, checks each total in code,
+      strips card numbers and other personal data, and puts every line item in
+      one of 12 spend categories. The categorizer is Qwen2.5-1.5B with a LoRA
+      adapter trained on 4,799 synthetic line items. On a 220-row test set split
+      by merchant it scores 90.5% top-1 and 0.893 macro-F1. Claude, asked the
+      same question without fine-tuning, scores 56.0% and 0.506. The gap is
+      real but smaller than it looks; the caveats are below.
     </p>
 
     <div class="cta-row">
-      <a class="btn btn-primary" href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Read the writeup</a>
-      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor">or the code</a>
+      <a class="btn btn-primary" href="https://github.com/lyhjeremy/receipt-auditor">Code and benchmark</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Read the write-up</a>
     </div>
-
-    <figure style="margin-top:38px">
-      <img class="shot" src="../assets/banner.png"
-        alt="Receipt Auditor banner artwork." />
-    </figure>
 
     <div class="claims">
       <div class="claim">
         <div class="n">90.5%</div>
-        <p>Top-1 category accuracy from the fine-tuned model, against Claude's
-           zero-shot <strong>56.0%</strong> on the identical blind prompt.</p>
+        <p>Top-1 accuracy of the LoRA model on 220 held-out line items from 158
+           merchants it never saw in training.</p>
       </div>
       <div class="claim">
-        <div class="n">0.893</div>
-        <p>macro-F1, against 0.506. It holds up across all twelve categories, not
-           just the common ones.</p>
+        <div class="n">27.7% &rarr; 90.5%</div>
+        <p>Base Qwen2.5-1.5B before and after the LoRA fine-tune, same prompt,
+           same test set.</p>
       </div>
       <div class="claim">
-        <div class="n">4 layers</div>
-        <p>of PII defence, starting with a schema that has nowhere to put a card
-           number in the first place.</p>
+        <div class="n">4.5 s / 17.7 s</div>
+        <p>Mean latency per item, local LoRA against Claude through
+           <code>claude -p</code>. The local model costs nothing per call.</p>
       </div>
       <div class="claim">
-        <div class="n">0</div>
-        <p>numbers originating from the model in a spend answer. The guard makes a
-           hallucinated figure structurally impossible.</p>
+        <div class="n">19</div>
+        <p>Tests across reconciliation, PII redaction and the spend-query
+           layer.</p>
       </div>
     </div>
   </section>
@@ -273,155 +309,152 @@
 <div class="route">
 
   <section class="stop stop--key">
-    <p class="eyebrow">↓ the headline result</p>
-    <h2>34.5 points over the frontier model</h2>
-
-    <div class="bignum">90.5%</div>
-    <p class="bignum-note">against Claude zero-shot at 56.0%, on the same twelve-category blind prompt.</p>
-
+    <p class="eyebrow">Benchmark</p>
+    <h2>Three systems, one held-out test set</h2>
     <p>
-      All three systems saw the <strong>identical</strong> prompt with no category
-      list supplied, matching the training format exactly. The fine-tuned model was
-      not handed a hint the others lacked. This is a fair comparison of what each
-      brings on its own.
+      The test set holds 220 line items from 158 merchants. The split is by
+      merchant, so no merchant appears in both training and test, and a leakage
+      check confirmed it. The base and LoRA models ran on all 220 rows; Claude
+      ran on a 150-row subsample of the same set to keep the run time down.
     </p>
     <div class="tablewrap">
       <table>
         <thead>
-          <tr><th>System</th><th>Top-1 acc</th><th>Macro-F1</th><th>Latency</th><th>Cost/1k</th></tr>
+          <tr><th>System</th><th>N</th><th>Top-1</th><th>Macro-F1</th><th>Latency</th><th>Cost/1k</th></tr>
         </thead>
         <tbody>
-          <tr><td>Base Qwen2.5-1.5B (no fine-tune)</td><td>27.7%</td><td>0.333</td><td>5.0s</td><td>$0</td></tr>
-          <tr class="win"><td>+ LoRA (this project)</td><td>90.5%</td><td>0.893</td><td>4.5s</td><td>$0</td></tr>
-          <tr><td>Claude (teacher, zero-shot)</td><td>56.0%</td><td>0.506</td><td>17.7s</td><td>Max sub</td></tr>
+          <tr><td>Base Qwen2.5-1.5B</td><td>220</td><td>27.7%</td><td>0.333</td><td>5.0 s</td><td>$0</td></tr>
+          <tr class="win"><td>Qwen2.5-1.5B + LoRA</td><td>220</td><td>90.5%</td><td>0.893</td><td>4.5 s</td><td>$0</td></tr>
+          <tr><td>Claude, zero-shot</td><td>150</td><td>56.0%</td><td>0.506</td><td>17.7 s</td><td>Max subscription</td></tr>
         </tbody>
       </table>
     </div>
     <p style="margin-top:22px">
-      It is also <strong>four times faster</strong> and costs nothing per call. The
-      training set is 4,799 synthetic line items written in realistic point-of-sale
-      styles: <code>SBUX #4821</code>, <code>WM SUPERCENTER #2847</code>,
-      <code>TST* JOE'S PIZZA</code>, and split <strong>by merchant</strong>, so no
-      merchant appears on both sides of the split.
+      The training data is 4,799 synthetic line items generated with
+      <code>claude -p</code> in the abbreviated styles real point-of-sale systems
+      print: <code>SBUX #4821</code>, <code>WM SUPERCENTER #2847</code>,
+      <code>TST* JOE'S PIZZA</code>. The split is 4,309 train, 270 validation and
+      220 test. Training ran on Apple Silicon with MLX: batch 4, 12 LoRA layers,
+      800 iterations, learning rate 1.5e-4. Validation loss fell from 5.085 to
+      0.419.
     </p>
     <figure>
       <div class="plate">
-        <img src="../eval/confusion_matrix.png" loading="lazy"
-          alt="Confusion matrix across the twelve spend categories showing a strong diagonal with limited confusion between neighbouring categories such as dining and coffee." />
+        <img width="1200" height="1050" src="../eval/confusion_matrix.png" loading="lazy"
+          alt="Confusion matrix for the LoRA model across 12 spend categories. The diagonal is strong; the largest off-diagonal cells are household predicted as other, travel predicted as transport, and transport predicted as fuel." />
       </div>
-      <figcaption>Twelve categories. The residual confusion is mostly dining against coffee, which is fair.</figcaption>
+      <figcaption>LoRA confusion matrix. The largest errors: household called other (7), travel called transport (4), transport called fuel (4).</figcaption>
     </figure>
-  </section>
-
-  <section class="stop">
-    <p class="eyebrow">↓ the design idea</p>
-    <h2>The number never originates from the model</h2>
-    <p>
-      Ask "how much did I spend on dining in March" and the arithmetic is done by
-      <code>analysis.answer_query</code> in pandas. The LLM receives the computed
-      figures and is asked only to turn them into a sentence. Then
-      <code>reconcile.assert_numbers_present</code> checks that every number it was
-      given still appears in what it wrote, and if one was dropped or altered, the
-      caller falls back to a template sentence.
-    </p>
-    <p>
-      This is the difference between asking a model not to hallucinate and building
-      a path where it cannot. There is no code route by which a number the model
-      invented reaches the screen.
-    </p>
-    <div class="pull">
-      <p>A hallucinated number is structurally impossible here, because the number
-         never originated from the model.</p>
-      <span class="who">From the repository's own README</span>
-    </div>
-  </section>
-
-  <section class="stop">
-    <p class="eyebrow">↓ reconciliation</p>
-    <h2>A mismatch is flagged, never quietly fixed</h2>
-    <p>
-      For each receipt, <code>computed = Σ(line items) + tax</code> is compared
-      against the printed total within a small tolerance. When they disagree the
-      receipt is <strong>rendered flagged for one-tap human review</strong> rather
-      than silently adjusted to agree.
-    </p>
-    <p>
-      Silently correcting a mismatch is the tempting behaviour and the wrong one:
-      it destroys exactly the signal that tells you the OCR misread a line.
-    </p>
-    <figure>
-      <div class="plate">
-        <img src="../assets/architecture.png" loading="lazy"
-          alt="Receipt Auditor pipeline diagram: receipt photos into local OCR, structured extraction, PII sweep, code-level reconciliation, fine-tuned categorisation, then a pandas analysis layer with an LLM used only for phrasing." />
-      </div>
-      <figcaption>The pipeline. Note where the LLM sits, and where it does not.</figcaption>
-    </figure>
-  </section>
-
-  <section class="stop">
-    <p class="eyebrow">↓ privacy</p>
-    <h2>Four layers, the first of which is doing most of the work</h2>
-    <div class="grid">
-      <div class="cell">
-        <h3>1 · The schema has no room</h3>
-        <p>The <code>Receipt</code> and <code>LineItem</code> models simply have no
-           fields for cardholder name, card number, address or loyalty id. The
-           vision model is never asked for them.</p>
-      </div>
-      <div class="cell">
-        <h3>2 · Raw OCR is discarded</h3>
-        <p>Only the validated <code>Receipt</code> object survives extraction. The
-           full text, with whatever was on it, does not persist.</p>
-      </div>
-      <div class="cell">
-        <h3>3 · A regex sweep anyway</h3>
-        <p><code>privacy.sweep_receipt</code> redacts anything PII-shaped that got
-           into a merchant or item string, and reports how many redactions it made.</p>
-      </div>
-      <div class="cell">
-        <h3>4 · Session-only when hosted</h3>
-        <p>On a hosted Space everything stays in memory.
-           <code>privacy.is_space_environment()</code> is the single source of truth
-           both paths check before persisting anything.</p>
-      </div>
-    </div>
   </section>
 
   <section class="stop stop--warn">
-    <p class="eyebrow">↓ the gap, reported not hidden</p>
-    <h2>These numbers are synthetic-only</h2>
+    <p class="eyebrow">Reading the gap</p>
+    <h2>What 90.5% against 56.0% does and doesn't show</h2>
     <p>
-      There is currently <strong>no real-receipt held-out column</strong> in the
-      benchmark. The specification calls for 10–20 real receipts, photographed and
-      hand-labelled, as the honest synthetic-versus-real tiebreaker, and that has
-      not been supplied yet.
+      The test labels come from the same synthetic generator as the training
+      data, and they are not always consistent. A first-aid kit at CVS is
+      labeled <code>other</code>; Shell unleaded is <code>fuel</code> on one row
+      and <code>transport</code> on another. The LoRA model learned the
+      labeler's habits, including those. Claude generated those labels in the
+      first place, yet asked one item at a time it often gives the more
+      defensible answer and is marked wrong.
+    </p>
+    <div class="tape">
+      <div class="tape-head"><span>Test-set rows, verbatim</span><span>label / LoRA / Claude</span></div>
+      <div class="tablewrap" style="margin:0;border:0;background:transparent">
+        <table>
+          <thead><tr><th>Merchant, item</th><th>Label</th><th>LoRA</th><th>Claude</th></tr></thead>
+          <tbody>
+            <tr><td class="item">CHEVRON #7843<span>UNLEADED 87 10.5 GAL</span></td><td>fuel</td><td class="hit">fuel</td><td class="hit">fuel</td></tr>
+            <tr><td class="item">HYATT REGENCY #3421<span>LODGING ROOM 1705 2NTS</span></td><td>travel</td><td class="hit">travel</td><td class="hit">travel</td></tr>
+            <tr><td class="item">CVS #2156<span>FIRST AID KIT</span></td><td>other</td><td class="hit">other</td><td class="diff">health</td></tr>
+            <tr><td class="item">CVS PHARMACY #4782<span>COLD RELIEF CAPLETS 24CT</span></td><td>other</td><td class="hit">other</td><td class="diff">health</td></tr>
+            <tr><td class="item">STARBUCKS COFFEE #2156<span>GRANDE CAFFE LATTE</span></td><td>dining</td><td class="diff">coffee_snacks</td><td class="diff">coffee_snacks</td></tr>
+            <tr><td class="item">SHELL*GAS STATION<span>UNLEADED 87 12.5 GAL</span></td><td>transport</td><td class="diff">fuel</td><td class="diff">fuel</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tape-foot">Rows from the held-out test set with the stored model outputs in <code>eval/raw_outputs.json</code>. Claude's column is the category its answer named.</p>
+    </div>
+    <p style="margin-top:24px">
+      Two more problems with the Claude column. First, Claude answered in full
+      sentences, and the scorer picks the longest category name that appears
+      anywhere in the text. About half of Claude's answers mention more than one
+      category ("health, distinct from household or other"), so some correct
+      answers were scored as wrong, and 56.0% understates it. Second, the prompt
+      gave no category list, but <code>claude -p</code> ran from inside the repo
+      with file access, and 101 of its 150 answers cite
+      <code>src/schemas.py</code>. In practice Claude saw the category list. Menu
+      Decoder, another app in the series, hit the same problem and fixed it by
+      running the CLI from a scratch directory; this benchmark was not rerun.
     </p>
     <p>
-      So 90.5% is a real number on a real held-out split with no merchant leakage,
-      and it is a number about <em>synthetic</em> line items. A model trained and
-      tested on the same generator can share that generator's blind spots. Until
-      the real slice runs, that caveat travels with the headline.
+      The script that produced the published numbers was lost before it was
+      committed. <code>training/bench_categorizer.py</code> is a reconstruction
+      that reproduces the LoRA figure exactly and the other two approximately
+      (about 26% and 51%). There is no real-receipt test set yet: the spec calls
+      for 10 to 20 real receipts, hand-labeled, and none have been added. All
+      figures here are on synthetic data.
+    </p>
+    <p>
+      What the result does support: a 1.5B model with a small adapter learns a
+      fixed 12-label scheme well enough to replace a frontier-model call for this
+      step, at a quarter of the latency and no per-call cost.
+    </p>
+  </section>
+
+  <section class="stop">
+    <p class="eyebrow">Design</p>
+    <h2>The model phrases numbers; code computes them</h2>
+    <p>
+      Ask "how much did I spend on dining" and a pandas query in
+      <code>analysis.answer_query</code> computes the figure. The LLM gets the
+      computed numbers and writes one sentence. Then
+      <code>reconcile.assert_numbers_present</code> checks that every number it
+      was given still appears in that sentence, within a cent. If one was
+      dropped or changed, the app shows a template sentence instead.
+    </p>
+    <p>
+      Receipt totals get the same treatment. For each receipt the app adds the
+      line items and tax and compares the sum with the printed total, allowing
+      the larger of 2 cents or 0.5%. A mismatch is flagged for a one-tap human
+      correction and never adjusted to agree.
     </p>
     <figure>
       <div class="plate">
-        <img src="../eval/loss_curve.png" loading="lazy"
-          alt="Training loss curve for the categorizer LoRA fine-tune, falling steeply and then flattening." />
+        <img width="1575" height="825" src="../assets/architecture.png" loading="lazy"
+          alt="Pipeline diagram: receipt photo to local OCR with tesseract, then claude -p extraction and validation, PII sweep, reconciliation in plain code, LoRA categorization; separately, a spend question goes to pandas, the LLM only phrases the answer, and a narration guard verifies the numbers." />
       </div>
-      <figcaption>The training run for the categorizer.</figcaption>
+      <figcaption>The pipeline. The LLM extracts fields from OCR text and phrases answers; arithmetic happens in code.</figcaption>
     </figure>
   </section>
 
+  <section class="stop">
+    <p class="eyebrow">Privacy</p>
+    <h2>Four layers of PII handling</h2>
+    <p>
+      The <code>Receipt</code> and <code>LineItem</code> schemas have no field for
+      a cardholder name, card number, address or loyalty number, so extraction
+      never asks for them. The raw OCR text is discarded once a validated
+      <code>Receipt</code> exists. <code>privacy.sweep_receipt</code> then runs a
+      regex pass over merchant and item strings, masks card-like digit runs to
+      the last four, replaces emails and phone numbers, and reports how many
+      redactions it made. On a hosted deployment, receipts stay in memory for the
+      session; <code>privacy.is_space_environment()</code> is the one check both
+      paths use before writing anything to disk.
+    </p>
+  </section>
+
   <section class="stop stop--end">
-    <p class="eyebrow">Finish · what it is built on</p>
-    <h2>Where the numbers come from</h2>
+    <p class="eyebrow">Build</p>
+    <h2>Stack and series</h2>
     <dl class="specs">
-      <div class="spec"><dt>Base model</dt><dd>Qwen2.5-1.5B, LoRA fine-tuned locally, called through <code>mlx_lm.generate</code></dd></div>
-      <div class="spec"><dt>Fallback</dt><dd>A plain <code>"other"</code> category if the adapter is absent: inspectable, not a black box</dd></div>
-      <div class="spec"><dt>Training data</dt><dd>4,799 synthetic line items, split by merchant so none straddles train/test</dd></div>
-      <div class="spec"><dt>Categories</dt><dd>Twelve, from groceries and dining through to subscriptions and travel</dd></div>
-      <div class="spec"><dt>OCR</dt><dd><code>tesseract</code> locally, then <code>claude -p</code> for extraction from the OCR'd text</dd></div>
-      <div class="spec"><dt>Analysis</dt><dd>pandas. The LLM phrases; it does not compute</dd></div>
-      <div class="spec"><dt>Benchmark</dt><dd><code>training/bench_categorizer.py</code></dd></div>
+      <div class="spec"><dt>Classifier</dt><dd>Qwen2.5-1.5B-Instruct (4-bit), LoRA via MLX on Apple Silicon, served with <code>mlx_lm.generate</code></dd></div>
+      <div class="spec"><dt>Extraction</dt><dd><code>tesseract</code> OCR, then one <code>claude -p</code> call per receipt to check it is a receipt and pull structured fields</dd></div>
+      <div class="spec"><dt>Validation</dt><dd>Pydantic schemas; reconciliation and narration guard in <code>src/reconcile.py</code></dd></div>
+      <div class="spec"><dt>Queries</dt><dd>Spoken or typed questions parsed into a structured <code>Query</code>, answered by pandas, repeats served from a semantic cache</dd></div>
+      <div class="spec"><dt>App</dt><dd>Gradio: batch upload, reconciled grid, dashboard, voice query</dd></div>
+      <div class="spec"><dt>Series</dt><dd>One of four apps that fine-tune a local model and benchmark it against Claude: <a href="https://lyhjeremy.github.io/cellar-scanner/">Cellar Scanner</a>, <a href="https://lyhjeremy.github.io/race-day-copilot/">Race Day Copilot</a>, Receipt Auditor, <a href="https://lyhjeremy.github.io/menu-decoder/">Menu Decoder</a></dd></div>
     </dl>
   </section>
 
@@ -430,19 +463,21 @@
 
 <div class="wrap">
   <section class="close">
-    <h2>Let the model write the sentence, never the number</h2>
+    <h2>Read the code and the raw outputs</h2>
     <div class="cta-row">
-      <a class="btn btn-primary" href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Read the writeup</a>
-      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor">or the code</a>
+      <a class="btn btn-primary" href="https://github.com/lyhjeremy/receipt-auditor">Code and benchmark</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Read the write-up</a>
     </div>
   </section>
 
   <footer>
     <p>
       Receipt Auditor ·
-      <a href="../">Showcase</a> ·
-      <a href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Writeup</a> ·
+      <a href="../">Project page</a> ·
+      <a href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Write-up</a> ·
       <a href="https://github.com/lyhjeremy/receipt-auditor">Source</a> ·
+      <a href="../privacy/">Privacy</a> ·
+      <a href="../terms/">Terms</a> ·
       MIT © 2026 Jeremy Lee
     </p>
   </footer>
