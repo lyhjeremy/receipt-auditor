@@ -18,19 +18,19 @@ One of four apps that fine-tune a small local model and benchmark it against Cla
 | Qwen2.5-1.5B + LoRA | 220 | **90.5%** | **0.893** | 4.5 s | $0 |
 | Claude, zero-shot | 150 | 56.0% | 0.506 | 17.7 s | Max subscription |
 
-Read the Claude row with care (details under [Limitations](#limitations)): Claude answered in prose that the scorer parsed by substring match, which undercounts it, and it ran with file access inside the repo, so most answers had seen the category list. The LoRA figure is exact; the gap is smaller than 34.5 points.
+Read the Claude row with care (details under [Limitations](#limitations)). Claude answered in prose that the scorer parsed by substring match, which undercounts it, and it ran with file access inside the repo, so most of its answers had seen the category list. The LoRA figure is exact, and the gap is smaller than 34.5 points.
 
 ![Confusion matrix for the LoRA model across 12 categories; the largest errors are household predicted as other, travel as transport, and transport as fuel](eval/confusion_matrix.png)
 
 ## Method
 
-- **Data.** 4,799 synthetic line items generated with `claude -p` in real point-of-sale styles (`SBUX #4821`, `WM SUPERCENTER #2847`, `TST* JOE'S PIZZA`). Split by merchant into 4,309 train, 270 validation and 220 test, with a leakage check (`training/prep_categorizer.py`, `eval/dataset_card.json`).
-- **Fine-tune.** LoRA on `mlx-community/Qwen2.5-1.5B-Instruct-4bit` with MLX on Apple Silicon: batch 4, 12 layers, 800 iterations, learning rate 1.5e-4. Validation loss went from 5.085 to 0.419 (`eval/loss_curve.png`).
-- **Benchmark.** Base, LoRA and Claude on the same prompt (merchant and item, no category list). Raw generations are in `eval/raw_outputs.json`; scores in `eval/benchmark.md`.
-- **Extraction.** `tesseract` OCR, then one `claude -p` call per receipt that rejects non-receipts, extracts Pydantic-validated fields and flags low-confidence reads.
-- **Reconciliation.** Line items plus tax are compared with the printed total, tolerance the larger of $0.02 or 0.5% (`src/reconcile.py`). A mismatch is flagged for human review, never corrected automatically.
-- **Narration guard.** Spending questions are parsed into a structured query and answered by pandas (`src/analysis.py`). The LLM only phrases the answer; `assert_numbers_present` checks every number survived, otherwise a template sentence is used. Repeat questions hit a semantic cache.
-- **PII.** The schema has no fields for cardholder name, card number, address or loyalty ID; raw OCR text is discarded; `privacy.sweep_receipt` redacts card-like digit runs, emails and phone numbers and counts the redactions; hosted sessions stay in memory.
+`scripts/gen_line_items.py` generated 4,799 synthetic line items with `claude -p`, written in point-of-sale styles such as `SBUX #4821`, `WM SUPERCENTER #2847` and `TST* JOE'S PIZZA`. They are split by merchant into 4,309 train, 270 validation and 220 test rows, with a leakage check (`training/prep_categorizer.py`, `eval/dataset_card.json`). The fine-tune is LoRA on `mlx-community/Qwen2.5-1.5B-Instruct-4bit` with MLX on Apple Silicon: batch 4, 12 layers, 800 iterations, learning rate 1.5e-4. Validation loss went from 5.085 to 0.419 (`eval/loss_curve.png`). Base, LoRA and Claude all get the same prompt, merchant and item with no category list; raw generations are in `eval/raw_outputs.json` and scores in `eval/benchmark.md`.
+
+In the app, `tesseract` reads the photo and one `claude -p` call per receipt rejects non-receipts, extracts Pydantic-validated fields and flags low-confidence reads. Line items plus tax are then compared with the printed total, with a tolerance of the larger of $0.02 or 0.5% (`src/reconcile.py`); a mismatch is flagged for human review and left as printed.
+
+Spending questions are parsed into a structured query and answered by pandas (`src/analysis.py`). The LLM only phrases the answer, and `assert_numbers_present` checks that every number survived; if one didn't, a template sentence is used. Repeat questions hit a semantic cache.
+
+For personal data, the schema has no fields for cardholder name, card number, address or loyalty ID, and raw OCR text is discarded. `privacy.sweep_receipt` redacts card-like digit runs, emails and phone numbers and counts the redactions, and hosted sessions stay in memory.
 
 ## Stack
 
@@ -66,11 +66,11 @@ No API key is needed. Extraction uses `claude -p` on a Claude subscription. With
 
 ## Limitations
 
-- **Synthetic data only.** The spec calls for 10 to 20 real, hand-labeled receipts as a final test; none have been added.
-- **Noisy labels.** The labels came from the same generator as the training data and are inconsistent in places (a CVS first-aid kit is `other`; Shell unleaded is `fuel` on one row and `transport` on another). The LoRA model learned those habits; Claude's more reasonable answers on such rows count as errors.
-- **Claude scoring.** The scorer takes the longest category name found anywhere in Claude's prose answer, and 83 of Claude's 150 answers mention more than one category, so 56.0% understates Claude.
-- **Claude saw the categories.** `claude -p` ran from inside the repo with file access; 101 of its 150 answers cite `src/schemas.py`. Menu Decoder fixed the same issue by running from a scratch directory; this benchmark was not rerun.
-- **Reconstructed script.** The script that produced `eval/benchmark.md` was lost before it was committed. `training/bench_categorizer.py` reproduces the LoRA figure exactly and the base and Claude figures approximately (about 26% and 51%).
+- The data is synthetic only. The spec calls for 10 to 20 hand-labeled receipts of my own as a final test, and none have been added.
+- The labels are noisy. They came from the same generator as the training data and are inconsistent in places (a CVS first-aid kit is `other`; Shell unleaded is `fuel` on one row and `transport` on another). The LoRA model learned those habits, and Claude's more reasonable answers on such rows count as errors.
+- The scorer takes the longest category name found anywhere in Claude's prose answer, and 83 of Claude's 150 answers mention more than one category, so 56.0% understates Claude.
+- Claude saw the categories. `claude -p` ran from inside the repo with file access, and 101 of its 150 answers cite `src/schemas.py`. Menu Decoder fixed the same issue by running from a scratch directory; this benchmark was not rerun.
+- The script that produced `eval/benchmark.md` was lost before it was committed. `training/bench_categorizer.py` is a reconstruction that reproduces the LoRA figure exactly and the base and Claude figures approximately (about 26% and 51%).
 
 ## License
 

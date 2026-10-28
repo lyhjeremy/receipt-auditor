@@ -272,7 +272,7 @@
       adapter trained on 4,799 synthetic line items. On a 220-row test set split
       by merchant it scores 90.5% top-1 and 0.893 macro-F1. Claude, asked the
       same question without fine-tuning, scores 56.0% and 0.506. The gap is
-      real but smaller than it looks; the caveats are below.
+      probably smaller than it looks, for reasons set out below.
     </p>
 
     <div class="cta-row">
@@ -331,7 +331,7 @@
     </div>
     <p style="margin-top:22px">
       The training data is 4,799 synthetic line items generated with
-      <code>claude -p</code> in the abbreviated styles real point-of-sale systems
+      <code>claude -p</code> in the abbreviated styles point-of-sale systems
       print: <code>SBUX #4821</code>, <code>WM SUPERCENTER #2847</code>,
       <code>TST* JOE'S PIZZA</code>. The split is 4,309 train, 270 validation and
       220 test. Training ran on Apple Silicon with MLX: batch 4, 12 LoRA layers,
@@ -392,12 +392,13 @@
       The script that produced the published numbers was lost before it was
       committed. <code>training/bench_categorizer.py</code> is a reconstruction
       that reproduces the LoRA figure exactly and the other two approximately
-      (about 26% and 51%). There is no real-receipt test set yet: the spec calls
-      for 10 to 20 real receipts, hand-labeled, and none have been added. All
+      (about 26% and 51%). Nothing has been tested on receipts from outside the
+      generator yet; the spec calls for 10 to 20 hand-labeled receipts of my
+      own, and none have been added. All
       figures here are on synthetic data.
     </p>
     <p>
-      What the result does support: a 1.5B model with a small adapter learns a
+      What the result does support is narrower. A 1.5B model with a small adapter learns a
       fixed 12-label scheme well enough to replace a frontier-model call for this
       step, at a quarter of the latency and no per-call cost.
     </p>
