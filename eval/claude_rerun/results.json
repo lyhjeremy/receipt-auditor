@@ -1,0 +1,1680 @@
+{
+ "date": "2026-10-28",
+ "model": [
+  "claude-sonnet-5-5"
+ ],
+ "scoring_rule": "exact match to one of 12 labels after lowercasing, trimming and collapsing whitespace; anything else is invalid and wrong",
+ "claude": {
+  "n": 220,
+  "correct": 176,
+  "top1_acc": 0.8,
+  "macro_f1": 0.7703,
+  "invalid": 0,
+  "mean_latency_s": 3.323,
+  "median_latency_s": 2.391
+ },
+ "claude_first_150": {
+  "n": 150,
+  "correct": 121,
+  "top1_acc": 0.8067,
+  "macro_f1": 0.771,
+  "invalid": 0
+ },
+ "lora_same_rule": {
+  "n": 220,
+  "correct": 199,
+  "top1_acc": 0.9045,
+  "macro_f1": 0.8929,
+  "invalid": 0
+ },
+ "claude_lora_agree": 179,
+ "per_category": {
+  "groceries": {
+   "n": 9,
+   "claude_correct": 9,
+   "lora_correct": 9
+  },
+  "dining": {
+   "n": 13,
+   "claude_correct": 12,
+   "lora_correct": 12
+  },
+  "coffee_snacks": {
+   "n": 15,
+   "claude_correct": 15,
+   "lora_correct": 15
+  },
+  "transport": {
+   "n": 15,
+   "claude_correct": 5,
+   "lora_correct": 11
+  },
+  "fuel": {
+   "n": 14,
+   "claude_correct": 14,
+   "lora_correct": 12
+  },
+  "health": {
+   "n": 15,
+   "claude_correct": 15,
+   "lora_correct": 15
+  },
+  "household": {
+   "n": 16,
+   "claude_correct": 16,
+   "lora_correct": 9
+  },
+  "clothing": {
+   "n": 30,
+   "claude_correct": 30,
+   "lora_correct": 30
+  },
+  "entertainment": {
+   "n": 26,
+   "claude_correct": 26,
+   "lora_correct": 26
+  },
+  "subscriptions_utilities": {
+   "n": 23,
+   "claude_correct": 23,
+   "lora_correct": 23
+  },
+  "travel": {
+   "n": 16,
+   "claude_correct": 11,
+   "lora_correct": 11
+  },
+  "other": {
+   "n": 28,
+   "claude_correct": 0,
+   "lora_correct": 26
+  }
+ },
+ "claude_confusions": [
+  {
+   "true": "other",
+   "predicted": "household",
+   "count": 20
+  },
+  {
+   "true": "transport",
+   "predicted": "fuel",
+   "count": 10
+  },
+  {
+   "true": "other",
+   "predicted": "health",
+   "count": 6
+  },
+  {
+   "true": "travel",
+   "predicted": "transport",
+   "count": 4
+  },
+  {
+   "true": "dining",
+   "predicted": "coffee_snacks",
+   "count": 1
+  },
+  {
+   "true": "other",
+   "predicted": "groceries",
+   "count": 1
+  },
+  {
+   "true": "other",
+   "predicted": "travel",
+   "count": 1
+  },
+  {
+   "true": "travel",
+   "predicted": "fuel",
+   "count": 1
+  }
+ ],
+ "invalid_outputs": [],
+ "rows": [
+  {
+   "i": 0,
+   "true": "other",
+   "claude": "health",
+   "lora": "other"
+  },
+  {
+   "i": 1,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 2,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 3,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 4,
+   "true": "transport",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 5,
+   "true": "travel",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 6,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 7,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 8,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 9,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 10,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 11,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 12,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 13,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 14,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 15,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 16,
+   "true": "travel",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 17,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 18,
+   "true": "dining",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 19,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 20,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 21,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 22,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 23,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 24,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 25,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 26,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 27,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 28,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 29,
+   "true": "other",
+   "claude": "health",
+   "lora": "other"
+  },
+  {
+   "i": 30,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 31,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 32,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "transport"
+  },
+  {
+   "i": 33,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "transport"
+  },
+  {
+   "i": 34,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 35,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 36,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 37,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 38,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 39,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 40,
+   "true": "other",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 41,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 42,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 43,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 44,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 45,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 46,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 47,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 48,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 49,
+   "true": "household",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 50,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 51,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 52,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 53,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 54,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 55,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 56,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 57,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 58,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 59,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 60,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 61,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 62,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 63,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 64,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 65,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 66,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 67,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 68,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 69,
+   "true": "transport",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 70,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 71,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 72,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 73,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 74,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 75,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 76,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 77,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 78,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 79,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 80,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 81,
+   "true": "transport",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 82,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 83,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 84,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 85,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 86,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 87,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 88,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 89,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 90,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 91,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 92,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 93,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 94,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 95,
+   "true": "other",
+   "claude": "groceries",
+   "lora": "other"
+  },
+  {
+   "i": 96,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "transport"
+  },
+  {
+   "i": 97,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 98,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 99,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 100,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 101,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 102,
+   "true": "travel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 103,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 104,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 105,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 106,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 107,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 108,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 109,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 110,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 111,
+   "true": "household",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 112,
+   "true": "other",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 113,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 114,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 115,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 116,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 117,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 118,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 119,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 120,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 121,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 122,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 123,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 124,
+   "true": "transport",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 125,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 126,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 127,
+   "true": "other",
+   "claude": "travel",
+   "lora": "other"
+  },
+  {
+   "i": 128,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 129,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 130,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 131,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 132,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 133,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 134,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 135,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 136,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 137,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 138,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 139,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 140,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 141,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 142,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 143,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 144,
+   "true": "transport",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 145,
+   "true": "household",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 146,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 147,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 148,
+   "true": "other",
+   "claude": "health",
+   "lora": "other"
+  },
+  {
+   "i": 149,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 150,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 151,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 152,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 153,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 154,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 155,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 156,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 157,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 158,
+   "true": "household",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 159,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 160,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 161,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 162,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 163,
+   "true": "household",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 164,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 165,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 166,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 167,
+   "true": "dining",
+   "claude": "dining",
+   "lora": "dining"
+  },
+  {
+   "i": 168,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 169,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 170,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 171,
+   "true": "household",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 172,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 173,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 174,
+   "true": "other",
+   "claude": "health",
+   "lora": "other"
+  },
+  {
+   "i": 175,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 176,
+   "true": "household",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 177,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 178,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "transport"
+  },
+  {
+   "i": 179,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 180,
+   "true": "household",
+   "claude": "household",
+   "lora": "household"
+  },
+  {
+   "i": 181,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 182,
+   "true": "travel",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 183,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "transport"
+  },
+  {
+   "i": 184,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 185,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 186,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 187,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 188,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "transport"
+  },
+  {
+   "i": 189,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 190,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 191,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 192,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 193,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 194,
+   "true": "transport",
+   "claude": "fuel",
+   "lora": "transport"
+  },
+  {
+   "i": 195,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 196,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 197,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 198,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 199,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 200,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 201,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 202,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 203,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 204,
+   "true": "clothing",
+   "claude": "clothing",
+   "lora": "clothing"
+  },
+  {
+   "i": 205,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 206,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 207,
+   "true": "entertainment",
+   "claude": "entertainment",
+   "lora": "entertainment"
+  },
+  {
+   "i": 208,
+   "true": "other",
+   "claude": "household",
+   "lora": "other"
+  },
+  {
+   "i": 209,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  },
+  {
+   "i": 210,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 211,
+   "true": "travel",
+   "claude": "travel",
+   "lora": "travel"
+  },
+  {
+   "i": 212,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 213,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "fuel"
+  },
+  {
+   "i": 214,
+   "true": "fuel",
+   "claude": "fuel",
+   "lora": "transport"
+  },
+  {
+   "i": 215,
+   "true": "health",
+   "claude": "health",
+   "lora": "health"
+  },
+  {
+   "i": 216,
+   "true": "travel",
+   "claude": "transport",
+   "lora": "transport"
+  },
+  {
+   "i": 217,
+   "true": "groceries",
+   "claude": "groceries",
+   "lora": "groceries"
+  },
+  {
+   "i": 218,
+   "true": "coffee_snacks",
+   "claude": "coffee_snacks",
+   "lora": "coffee_snacks"
+  },
+  {
+   "i": 219,
+   "true": "subscriptions_utilities",
+   "claude": "subscriptions_utilities",
+   "lora": "subscriptions_utilities"
+  }
+ ],
+ "claude_latency_s": [
+  2.903,
+  2.16,
+  2.339,
+  5.874,
+  1.831,
+  3.162,
+  3.025,
+  2.882,
+  2.935,
+  1.855,
+  5.01,
+  4.689,
+  2.631,
+  3.679,
+  2.175,
+  1.617,
+  2.542,
+  3.039,
+  2.239,
+  1.619,
+  1.966,
+  1.598,
+  2.121,
+  1.936,
+  2.141,
+  2.227,
+  1.946,
+  2.008,
+  3.394,
+  10.048,
+  2.03,
+  3.762,
+  3.62,
+  1.822,
+  1.691,
+  3.624,
+  1.608,
+  2.191,
+  3.131,
+  1.696,
+  2.454,
+  13.078,
+  3.356,
+  2.034,
+  4.644,
+  6.34,
+  1.915,
+  1.254,
+  2.418,
+  2.169,
+  2.364,
+  3.88,
+  4.912,
+  1.24,
+  3.06,
+  2.036,
+  2.898,
+  2.695,
+  4.107,
+  5.582,
+  4.244,
+  2.312,
+  1.82,
+  1.911,
+  4.812,
+  2.016,
+  1.843,
+  5.007,
+  2.012,
+  7.932,
+  4.289,
+  1.941,
+  1.908,
+  2.067,
+  4.393,
+  1.719,
+  1.923,
+  1.965,
+  1.45,
+  2.066,
+  2.036,
+  4.296,
+  2.223,
+  4.942,
+  2.969,
+  1.879,
+  3.745,
+  3.567,
+  1.92,
+  6.665,
+  1.797,
+  1.591,
+  2.496,
+  3.73,
+  1.51,
+  1.91,
+  3.469,
+  2.179,
+  5.687,
+  27.767,
+  1.858,
+  1.5,
+  3.043,
+  5.0,
+  1.988,
+  1.667,
+  3.458,
+  2.878,
+  4.64,
+  1.694,
+  6.948,
+  6.544,
+  3.425,
+  1.813,
+  6.268,
+  2.128,
+  5.548,
+  2.115,
+  2.336,
+  2.818,
+  1.828,
+  2.142,
+  4.965,
+  8.284,
+  1.714,
+  3.86,
+  3.836,
+  4.972,
+  2.851,
+  1.849,
+  4.149,
+  1.936,
+  1.896,
+  1.804,
+  1.916,
+  3.225,
+  2.148,
+  5.142,
+  3.549,
+  3.939,
+  2.944,
+  1.919,
+  4.281,
+  10.412,
+  3.254,
+  1.689,
+  5.585,
+  1.535,
+  5.669,
+  4.65,
+  1.615,
+  4.663,
+  8.992,
+  1.706,
+  1.615,
+  4.283,
+  2.183,
+  4.851,
+  5.28,
+  6.281,
+  2.281,
+  2.055,
+  6.04,
+  2.133,
+  1.54,
+  2.707,
+  1.967,
+  3.571,
+  2.94,
+  3.883,
+  1.385,
+  1.454,
+  2.009,
+  5.356,
+  3.008,
+  2.043,
+  3.894,
+  1.549,
+  2.042,
+  2.77,
+  6.847,
+  1.789,
+  2.018,
+  3.504,
+  2.176,
+  2.185,
+  2.063,
+  2.169,
+  2.502,
+  4.67,
+  2.148,
+  1.824,
+  3.826,
+  2.218,
+  12.43,
+  2.881,
+  2.017,
+  1.77,
+  4.363,
+  6.536,
+  1.84,
+  1.753,
+  1.493,
+  2.009,
+  3.228,
+  1.96,
+  2.863,
+  5.694,
+  5.104,
+  4.785,
+  1.548,
+  4.654,
+  2.066,
+  2.129,
+  1.849,
+  2.085,
+  3.577,
+  5.105,
+  1.941,
+  4.53
+ ]
+}

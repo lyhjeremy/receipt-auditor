@@ -1,0 +1,5 @@
+Merchant: {merchant}. Line item: {item}. Which category is this?
+
+Allowed categories: groceries, dining, coffee_snacks, transport, fuel, health, household, clothing, entertainment, subscriptions_utilities, travel, other.
+
+Answer with exactly one category from the list, written as shown, and nothing else.
