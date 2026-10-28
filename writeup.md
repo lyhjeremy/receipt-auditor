@@ -38,7 +38,7 @@ Going back through `eval/raw_outputs.json`, I found four problems with the compa
 
 The labels are noisy. They came from the same generator as the training data and aren't consistent: a first-aid kit and cold-relief caplets from CVS are both labeled `other`, a Starbucks latte is `dining`, and Shell unleaded is `fuel` on one test row and `transport` on another. The LoRA model learned those habits. Claude answered `health`, `coffee_snacks` and `fuel`, which a person would mostly accept, and was marked wrong.
 
-The scorer undercounts Claude. Claude answered in full sentences, for example "would fall under the **`health`** category ... distinct from `household` or `other`", and the scorer takes the longest category name that appears anywhere in the answer, which in that case is `household`. 83 of Claude's 150 answers mention more than one category.
+The scoring probably undercounts Claude. Claude answered in full sentences, so a script had to pick one category out of each answer, and 83 of the 150 answers mention more than one. The original script's rule is lost (see below). The reconstruction takes the longest category name in the answer, and on an answer such as "would fall under the **`health`** category ... distinct from `household` or `other`" it picks `household`, the category Claude was ruling out.
 
 Claude saw the category list anyway. The prompt had none, but `claude -p` ran from inside the repo with file access, and 101 of its 150 answers cite `src/schemas.py`. Most of the Claude column is contaminated in that sense. Menu Decoder hit the same problem and fixed it by running the CLI from a scratch directory; this benchmark has not been rerun that way.
 

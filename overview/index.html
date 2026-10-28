@@ -242,19 +242,123 @@
   .stop--key::before, .stop--warn::before, .stop--end::before { background: var(--paper); border: 0; }
   .stop--end::before { color: var(--ink); }
 
+</style>
+</head>
+<body>
+<style>
+  /* Receipt Auditor: printed-tape figures, mono throughout. Colors: green = LoRA, amber = Claude, grey = base. */
+  .seg { display: flex; flex-wrap: wrap; gap: 0; margin: 0 0 14px; }
+  .seg button { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+                padding: 10px 12px; background: transparent; color: var(--ink2);
+                border: 1px solid var(--edge); margin: 0 -1px -1px 0; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .seg button:hover { color: var(--ink); border-color: var(--ink); }
+  .seg button[aria-pressed="true"]:hover { color: var(--paper); }
 
-  .tape { margin-top: 30px; border: 1px solid var(--edge); background: var(--card); font-family: var(--mono); }
-  .tape-head { padding: 12px 16px; border-bottom: 1px dashed var(--edge); font: 600 12px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .tape table { min-width: 600px; font-family: var(--mono); font-size: 13.5px; }
+  .tape { border: 1px solid var(--edge); background: var(--card); font-family: var(--mono); }
+  .tape-head { padding: 12px 16px; border-bottom: 1px dashed var(--edge); font: 600 12px/1.4 var(--mono);
+               letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+               display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .tape-body { padding: 16px 16px 6px; }
+  .tape .tape-foot { margin: 0; max-width: none; padding: 10px 16px 14px; border-top: 1px dashed var(--edge);
+               font-family: var(--sans); font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .tape .tape-title { font: 600 clamp(19px, 2.4vw, 24px)/1.2 var(--display); color: var(--ink);
+                margin: 0 0 14px; letter-spacing: -.01em; }
+
+  .bench-row { display: grid; grid-template-columns: minmax(0, 11.5rem) minmax(0, 1fr) 5.2rem; gap: 6px 14px;
+               align-items: center; padding: 8px 0; border-bottom: 1px dotted var(--edge); font-size: 14px; }
+  .bench-row:last-child { border-bottom: 0; }
+  .bench-row .nm { color: var(--ink); }
+  .bench-row .nm small { display: block; color: var(--muted); font-size: 11.5px; }
+  .bench-row .v { text-align: right; font-weight: 600; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .track { height: 16px; background: color-mix(in srgb, var(--ink) 6%, transparent); position: relative; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; }
+  .s-lora { background: var(--accent); } .s-claude { background: var(--accent2); } .s-base { background: var(--muted); }
+  @media (max-width: 560px) {
+    .bench-row { grid-template-columns: minmax(0, 1fr) 4.6rem; }
+    .bench-row .track { grid-column: 1 / -1; grid-row: 2; }
+  }
+
+  .cls-row { display: grid; grid-template-columns: 12.5rem minmax(0, 1fr) 4.4rem; gap: 4px 14px;
+             align-items: center; padding: 7px 0; border-bottom: 1px dotted var(--rule); font: 13.5px/1.35 var(--mono); }
+  .cls-row .nm { color: var(--ink); overflow-wrap: anywhere; }
+  .cls-row .nm small { color: var(--muted); }
+  .cls-row .v { text-align: right; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cls-row .err { grid-column: 2 / -1; color: var(--accent2); font-size: 12.5px; margin-top: -2px; }
+  .cls-bar { display: flex; height: 14px; }
+  .cls-bar span { display: block; height: 100%; }
+  .cls-bar .ok { background: var(--accent); }
+  .cls-bar .bad { background: var(--accent2); border-left: 1px solid var(--card); }
+  @media (max-width: 560px) {
+    .cls-row { grid-template-columns: minmax(0, 1fr) 4rem; }
+    .cls-row .cls-bar { grid-column: 1 / -1; grid-row: 2; }
+    .cls-row .err { grid-column: 1 / -1; }
+  }
+
+  #lat-box { width: 100%; }
+  #lat-box svg { display: block; width: 100%; height: auto; overflow: visible; }
+  #lat-box svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .lat-grid { stroke: var(--rule); stroke-width: 1; }
+  .lat-tick { fill: var(--muted); font: 11px var(--mono); }
+  .lat-name { fill: var(--ink); font: 600 13px var(--mono); }
+  .lat-sub { fill: var(--muted); font: 11.5px var(--mono); }
+  .d-lora { fill: var(--accent); } .d-claude { fill: var(--accent2); } .d-base { fill: var(--muted); }
+  .lat-med { stroke: var(--ink); stroke-width: 2; }
+  .lat-cur { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .tape .readout { font: 13px/1.5 var(--mono); color: var(--ink); min-height: 1.5em; margin: 10px 0 0; max-width: none; }
+
+  .tape table { min-width: 560px; font-family: var(--mono); font-size: 13.5px; }
   .tape td, .tape th { border-bottom: 1px dashed var(--rule); padding: 10px 14px; vertical-align: top; }
   .tape td.item { color: var(--ink); }
   .tape td.item span { display: block; color: var(--muted); font-size: 12px; }
   .tape td.hit { color: var(--accent); font-weight: 600; }
   .tape td.diff { color: var(--accent2); font-weight: 600; }
-  .tape .tape-foot { margin: 0; max-width: none; padding: 10px 16px; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+
+  ol.caveats { list-style: none; counter-reset: cv; margin: 28px 0 0; padding: 0; border-top: 1px solid var(--edge); }
+  ol.caveats > li { counter-increment: cv; position: relative; padding: 18px 0 18px 3.2rem; border-bottom: 1px solid var(--rule); }
+  ol.caveats > li::before { content: counter(cv, decimal-leading-zero); position: absolute; left: 0; top: 20px;
+                            font: 600 13px/1 var(--mono); color: var(--accent2); }
+  ol.caveats h3 { font-family: var(--display); font-size: 20px; font-weight: 600; margin: 0 0 6px; }
+  ol.caveats p { margin: 0 0 10px; max-width: 62ch; }
+  ol.caveats p:last-child { margin: 0; }
+  @media (max-width: 560px) {
+    ol.caveats > li { padding-left: 0; }
+    ol.caveats > li::before { position: static; display: block; margin-bottom: 8px; }
+  }
+  .verbatim { margin: 12px 0 10px; padding: 12px 14px; border: 1px dashed var(--edge); background: var(--card);
+              font: 13px/1.6 var(--mono); color: var(--ink); }
+  .verbatim mark { background: transparent; color: var(--accent2); font-weight: 600;
+                   text-decoration: underline; text-underline-offset: 3px; }
+  .verbatim small { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; }
+
+  ol.pipe { list-style: none; margin: 26px 0 0; padding: 0; border: 1px solid var(--edge); }
+  ol.pipe li { display: grid; grid-template-columns: 2.4rem 8.5rem minmax(0, 1fr); gap: 4px 14px;
+               padding: 12px 16px; border-bottom: 1px solid var(--rule); font-size: 15.5px; line-height: 1.5;
+               font-family: var(--sans); color: var(--ink2); }
+  ol.pipe li:last-child { border-bottom: 0; }
+  ol.pipe .k { font: 600 12px/1.9 var(--mono); color: var(--muted); }
+  ol.pipe .who { font: 600 12px/1.9 var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+  ol.pipe .who.code { color: var(--accent); } ol.pipe .who.llm { color: var(--accent2); }
+  ol.pipe li.split { background: color-mix(in srgb, var(--ink) 4%, transparent); font: 600 12px/1.4 var(--mono);
+                     letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: block; }
+  @media (max-width: 560px) { ol.pipe li { grid-template-columns: 2rem minmax(0, 1fr); }
+                              ol.pipe li > span:last-child { grid-column: 2; } }
+
+  .recon { margin-top: 28px; }
+  .recon-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 26px; }
+  @media (max-width: 640px) { .recon-grid { grid-template-columns: 1fr; } }
+  .recon label { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+                 padding: 6px 0; border-bottom: 1px dotted var(--rule); font: 13.5px var(--mono); color: var(--ink); }
+  .recon input { width: 7.5rem; font: 600 14px var(--mono); text-align: right; color: var(--ink);
+                 background: var(--paper); border: 1px solid var(--edge); padding: 6px 8px; }
+  .recon dl { margin: 0; font: 13.5px var(--mono); }
+  .recon dl div { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dotted var(--rule); }
+  .recon dt { color: var(--ink2); } .recon dd { margin: 0; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .recon .status { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--edge); font: 600 13.5px/1.4 var(--mono); }
+  .recon .status.ok { color: var(--accent); border-color: var(--accent); }
+  .recon .status.bad { color: var(--accent2); border-color: var(--accent2); }
 </style>
-</head>
-<body>
+
 <div class="wrap">
   <header class="masthead">
     <div class="logo">Receipt Auditor</div>
@@ -269,39 +373,34 @@
       Receipt Auditor reads photographed receipts, checks each total in code,
       strips card numbers and other personal data, and puts every line item in
       one of 12 spend categories. The categorizer is Qwen2.5-1.5B with a LoRA
-      adapter trained on 4,799 synthetic line items. On a 220-row test set split
-      by merchant it scores 90.5% top-1 and 0.893 macro-F1. Claude, asked the
-      same question without fine-tuning, scores 56.0% and 0.506. The gap is
-      probably smaller than it looks, for reasons set out below.
+      adapter trained on 4,799 synthetic line items. The comparison with Claude
+      flatters the small model: the labels are noisy, Claude could read the
+      category list, and its prose answers were scored by a heuristic. Section 02
+      takes those one at a time.
     </p>
 
     <div class="cta-row">
       <a class="btn btn-primary" href="https://github.com/lyhjeremy/receipt-auditor">Code and benchmark</a>
-      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Read the write-up</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Engineering notes</a>
     </div>
 
-    <div class="claims">
-      <div class="claim">
-        <div class="n">90.5%</div>
-        <p>Top-1 accuracy of the LoRA model on 220 held-out line items from 158
-           merchants it never saw in training.</p>
+    <figure class="tape" id="bench" style="margin-top:42px">
+      <div class="tape-head"><span>Benchmark, held-out test set</span><span>eval/benchmark.json</span></div>
+      <div class="tape-body">
+        <div class="seg" role="group" aria-label="Metric">
+          <button type="button" data-m="top1" aria-pressed="true">Top-1 accuracy</button>
+          <button type="button" data-m="f1" aria-pressed="false">Macro-F1</button>
+          <button type="button" data-m="lat" aria-pressed="false">Seconds per item</button>
+        </div>
+        <p class="tape-title" id="bench-title">The adapter takes the same 1.5B model from 27.7% to 90.5%</p>
+        <div id="bench-rows">
+          <div class="bench-row"><span class="nm">Base Qwen2.5-1.5B<small>n = 220</small></span><span class="track"><span class="fill s-base" style="width:27.7%"></span></span><span class="v">27.7%</span></div>
+          <div class="bench-row"><span class="nm">Qwen2.5-1.5B + LoRA<small>n = 220</small></span><span class="track"><span class="fill s-lora" style="width:90.5%"></span></span><span class="v">90.5%</span></div>
+          <div class="bench-row"><span class="nm">Claude, zero-shot<small>n = 150</small></span><span class="track"><span class="fill s-claude" style="width:56%"></span></span><span class="v">56.0%</span></div>
+        </div>
       </div>
-      <div class="claim">
-        <div class="n">27.7% &rarr; 90.5%</div>
-        <p>Base Qwen2.5-1.5B before and after the LoRA fine-tune, same prompt,
-           same test set.</p>
-      </div>
-      <div class="claim">
-        <div class="n">4.5 s / 17.7 s</div>
-        <p>Mean latency per item, local LoRA against Claude through
-           <code>claude -p</code>. The local model costs nothing per call.</p>
-      </div>
-      <div class="claim">
-        <div class="n">19</div>
-        <p>Tests across reconciliation, PII redaction and the spend-query
-           layer.</p>
-      </div>
-    </div>
+      <figcaption class="tape-foot">220 line items from 158 merchants that never appear in training. Claude ran on a 150-row subsample of the same set. Local runs cost nothing per call; Claude ran through <code>claude -p</code> on a Max subscription.</figcaption>
+    </figure>
   </section>
 </div>
 
@@ -310,97 +409,138 @@
 
   <section class="stop stop--key">
     <p class="eyebrow">Benchmark</p>
-    <h2>Three systems, one held-out test set</h2>
+    <h2>21 errors in 220, most of them between neighbors</h2>
     <p>
-      The test set holds 220 line items from 158 merchants. The split is by
-      merchant, so no merchant appears in both training and test, and a leakage
-      check confirmed it. The base and LoRA models ran on all 220 rows; Claude
-      ran on a 150-row subsample of the same set to keep the run time down.
-    </p>
-    <div class="tablewrap">
-      <table>
-        <thead>
-          <tr><th>System</th><th>N</th><th>Top-1</th><th>Macro-F1</th><th>Latency</th><th>Cost/1k</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Base Qwen2.5-1.5B</td><td>220</td><td>27.7%</td><td>0.333</td><td>5.0 s</td><td>$0</td></tr>
-          <tr class="win"><td>Qwen2.5-1.5B + LoRA</td><td>220</td><td>90.5%</td><td>0.893</td><td>4.5 s</td><td>$0</td></tr>
-          <tr><td>Claude, zero-shot</td><td>150</td><td>56.0%</td><td>0.506</td><td>17.7 s</td><td>Max subscription</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p style="margin-top:22px">
       The training data is 4,799 synthetic line items generated with
       <code>claude -p</code> in the abbreviated styles point-of-sale systems
       print: <code>SBUX #4821</code>, <code>WM SUPERCENTER #2847</code>,
-      <code>TST* JOE'S PIZZA</code>. The split is 4,309 train, 270 validation and
-      220 test. Training ran on Apple Silicon with MLX: batch 4, 12 LoRA layers,
-      800 iterations, learning rate 1.5e-4. Validation loss fell from 5.085 to
-      0.419.
+      <code>TST* JOE'S PIZZA</code>. It is split by merchant into 4,309 train,
+      270 validation and 220 test rows, and a leakage check confirmed no merchant
+      sits on both sides. Training ran on Apple Silicon with MLX: batch 4, 12 LoRA
+      layers, 800 iterations, learning rate 1.5e-4. Validation loss fell from
+      5.085 to 0.419.
     </p>
-    <figure>
-      <div class="plate">
-        <img width="1200" height="1050" src="../eval/confusion_matrix.png" loading="lazy"
-          alt="Confusion matrix for the LoRA model across 12 spend categories. The diagonal is strong; the largest off-diagonal cells are household predicted as other, travel predicted as transport, and transport predicted as fuel." />
+    <p>
+      The fine-tuned model gets 199 of the 220 test items right. Its mistakes
+      cluster where the categories touch: household goods called <code>other</code>,
+      travel called <code>transport</code>, transport called <code>fuel</code>.
+    </p>
+
+    <figure class="tape" id="cls" style="margin-top:28px">
+      <div class="tape-head"><span>LoRA, per category</span><span>correct / test items</span></div>
+      <div class="tape-body">
+        <div class="seg" role="group" aria-label="Sort categories">
+          <button type="button" data-s="acc" aria-pressed="true">Worst first</button>
+          <button type="button" data-s="n" aria-pressed="false">Largest first</button>
+          <button type="button" data-s="tax" aria-pressed="false">Schema order</button>
+        </div>
+        <p class="tape-title">Household is the weak spot: 9 of 16, with 7 sent to other</p>
+        <div id="cls-rows"></div>
+        <noscript><img width="1200" height="1050" src="../eval/confusion_matrix.png" alt="Confusion matrix for the LoRA model across 12 spend categories. The diagonal is strong; the largest off-diagonal cells are household predicted as other, travel predicted as transport, and transport predicted as fuel." /></noscript>
       </div>
-      <figcaption>LoRA confusion matrix. The largest errors: household called other (7), travel called transport (4), transport called fuel (4).</figcaption>
+      <figcaption class="tape-foot">Test counts per category from <code>eval/dataset_card.json</code>; every wrong prediction from <code>eval/confusions.json</code>. The 21 listed errors account for the whole gap between 220 and the 199 correct (90.5%).</figcaption>
+    </figure>
+
+    <figure class="tape" style="margin-top:28px">
+      <div class="tape-head"><span>Latency, every item</span><span>eval/raw_outputs.json</span></div>
+      <div class="tape-body">
+        <p class="tape-title">Claude's median is 13.7 s, but 14 of its 150 calls took over 30 s</p>
+        <div id="lat-box"></div>
+        <p class="readout" id="lat-read" aria-live="polite">Hover a dot, or focus the chart and use the arrow keys.</p>
+      </div>
+      <figcaption class="tape-foot">Wall-clock seconds per item on a log scale; each dot is one call. The local runs include loading the model for every call through <code>mlx_lm.generate</code>, which is why the base model and the adapter both sit near 5 s. Means: 5.0 s base, 4.5 s LoRA, 17.7 s Claude.</figcaption>
     </figure>
   </section>
 
   <section class="stop stop--warn">
     <p class="eyebrow">Reading the gap</p>
-    <h2>What 90.5% against 56.0% does and doesn't show</h2>
+    <h2>Why the 34.5-point gap is smaller than it looks</h2>
     <p>
-      The test labels come from the same synthetic generator as the training
-      data, and they are not always consistent. A first-aid kit at CVS is
-      labeled <code>other</code>; Shell unleaded is <code>fuel</code> on one row
-      and <code>transport</code> on another. The LoRA model learned the
-      labeler's habits, including those. Claude generated those labels in the
-      first place, yet asked one item at a time it often gives the more
-      defensible answer and is marked wrong.
+      I found these by reading <code>eval/raw_outputs.json</code> row by row,
+      after the headline number was already published. The LoRA figure stands.
+      The Claude figure has four problems, and none of them can be sized without
+      a rerun.
     </p>
-    <div class="tape">
-      <div class="tape-head"><span>Test-set rows, verbatim</span><span>label / LoRA / Claude</span></div>
-      <div class="tablewrap" style="margin:0;border:0;background:transparent">
-        <table>
-          <thead><tr><th>Merchant, item</th><th>Label</th><th>LoRA</th><th>Claude</th></tr></thead>
-          <tbody>
-            <tr><td class="item">CHEVRON #7843<span>UNLEADED 87 10.5 GAL</span></td><td>fuel</td><td class="hit">fuel</td><td class="hit">fuel</td></tr>
-            <tr><td class="item">HYATT REGENCY #3421<span>LODGING ROOM 1705 2NTS</span></td><td>travel</td><td class="hit">travel</td><td class="hit">travel</td></tr>
-            <tr><td class="item">CVS #2156<span>FIRST AID KIT</span></td><td>other</td><td class="hit">other</td><td class="diff">health</td></tr>
-            <tr><td class="item">CVS PHARMACY #4782<span>COLD RELIEF CAPLETS 24CT</span></td><td>other</td><td class="hit">other</td><td class="diff">health</td></tr>
-            <tr><td class="item">STARBUCKS COFFEE #2156<span>GRANDE CAFFE LATTE</span></td><td>dining</td><td class="diff">coffee_snacks</td><td class="diff">coffee_snacks</td></tr>
-            <tr><td class="item">SHELL*GAS STATION<span>UNLEADED 87 12.5 GAL</span></td><td>transport</td><td class="diff">fuel</td><td class="diff">fuel</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="tape-foot">Rows from the held-out test set with the stored model outputs in <code>eval/raw_outputs.json</code>. Claude's column is the category its answer named.</p>
-    </div>
-    <p style="margin-top:24px">
-      Two more problems with the Claude column. First, Claude answered in full
-      sentences, and the scorer picks the longest category name that appears
-      anywhere in the text. About half of Claude's answers mention more than one
-      category ("health, distinct from household or other"), so some correct
-      answers were scored as wrong, and 56.0% understates it. Second, the prompt
-      gave no category list, but <code>claude -p</code> ran from inside the repo
-      with file access, and 101 of its 150 answers cite
-      <code>src/schemas.py</code>. In practice Claude saw the category list. Menu
-      Decoder, another app in the series, hit the same problem and fixed it by
-      running the CLI from a scratch directory; this benchmark was not rerun.
+
+    <ol class="caveats">
+      <li>
+        <h3>The labels are noisy, and the fine-tune learned the noise</h3>
+        <p>
+          The test labels come from the same synthetic generator as the training
+          data. A first-aid kit at CVS is <code>other</code>; Shell unleaded is
+          <code>fuel</code> on one row and <code>transport</code> on another. The
+          adapter learned those habits. Claude, answering one item at a time,
+          often gives the more defensible category and is marked wrong.
+        </p>
+        <div class="tape" style="margin-top:14px">
+          <div class="tape-head"><span>Test-set rows, verbatim</span><span>label / LoRA / Claude</span></div>
+          <div class="tablewrap" style="margin:0;border:0;background:transparent">
+            <table>
+              <thead><tr><th>Merchant, item</th><th>Label</th><th>LoRA</th><th>Claude</th></tr></thead>
+              <tbody>
+                <tr><td class="item">CHEVRON #7843<span>UNLEADED 87 10.5 GAL</span></td><td>fuel</td><td class="hit">fuel</td><td class="hit">fuel</td></tr>
+                <tr><td class="item">HYATT REGENCY #3421<span>LODGING ROOM 1705 2NTS</span></td><td>travel</td><td class="hit">travel</td><td class="hit">travel</td></tr>
+                <tr><td class="item">CVS #2156<span>FIRST AID KIT</span></td><td>other</td><td class="hit">other</td><td class="diff">health</td></tr>
+                <tr><td class="item">CVS PHARMACY #4782<span>COLD RELIEF CAPLETS 24CT</span></td><td>other</td><td class="hit">other</td><td class="diff">health</td></tr>
+                <tr><td class="item">STARBUCKS COFFEE #2156<span>GRANDE CAFFE LATTE</span></td><td>dining</td><td class="diff">coffee_snacks</td><td class="diff">coffee_snacks</td></tr>
+                <tr><td class="item">SHELL*GAS STATION<span>UNLEADED 87 12.5 GAL</span></td><td>transport</td><td class="diff">fuel</td><td class="diff">fuel</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="tape-foot">Claude's column is the category its answer named.</p>
+        </div>
+      </li>
+      <li>
+        <h3>Claude answered in sentences, and a heuristic picked the category</h3>
+        <p>
+          The base model and Claude both answered in prose, so a script had to
+          pull one category name out of each answer. 83 of Claude's 150 answers
+          name more than one category. The script that produced 56.0% is lost
+          (item 04), and its rule is unknown. The reconstruction takes the
+          longest category name in the answer, which on Claude's first answer
+          picks the one Claude was ruling out:
+        </p>
+        <div class="verbatim">
+          A first aid kit purchased at CVS #2156 would fall under the **`health`**
+          category in this project's taxonomy (`src/schemas.py:15-18`) [&hellip;] distinct from
+          `<mark>household</mark>` (cleaning/paper goods) or `other`.
+          <small>claude_out[0], abridged. Scored as household by the reconstructed rule. The label is other.</small>
+        </div>
+        <p>Whatever the original rule was, prose scored this way probably understates Claude.</p>
+      </li>
+      <li>
+        <h3>Claude saw the category list</h3>
+        <p>
+          The prompt gave no list of categories, but <code>claude -p</code> ran
+          from inside the repo with file access, and 101 of its 150 answers cite
+          <code>src/schemas.py</code>. Menu Decoder, the next app in the series,
+          hit the same leak and fixed it by running the CLI from a scratch
+          directory. This benchmark was not rerun.
+        </p>
+      </li>
+      <li>
+        <h3>The scoring script is a reconstruction</h3>
+        <p>
+          The script that produced the published numbers was lost before it was
+          committed. <code>training/bench_categorizer.py</code> was rebuilt
+          against the stored raw outputs. It reproduces the test-set order and
+          the LoRA figure exactly, because the adapter's outputs are bare
+          category names. For the two prose systems it gets about 26% and 51%,
+          against the published 27.7% and 56.0%.
+        </p>
+      </li>
+    </ol>
+
+    <p style="margin-top:26px">
+      Everything above is on synthetic data. The spec calls for 10 to 20
+      hand-labeled receipts of my own as a final test, and the dataset card
+      still records zero.
     </p>
     <p>
-      The script that produced the published numbers was lost before it was
-      committed. <code>training/bench_categorizer.py</code> is a reconstruction
-      that reproduces the LoRA figure exactly and the other two approximately
-      (about 26% and 51%). Nothing has been tested on receipts from outside the
-      generator yet; the spec calls for 10 to 20 hand-labeled receipts of my
-      own, and none have been added. All
-      figures here are on synthetic data.
-    </p>
-    <p>
-      What the result does support is narrower. A 1.5B model with a small adapter learns a
-      fixed 12-label scheme well enough to replace a frontier-model call for this
-      step, at a quarter of the latency and no per-call cost.
+      What the result does support is narrower than the headline. A 1.5B model
+      with a 4M-parameter adapter learns a fixed 12-label scheme well enough to
+      replace a frontier-model call for this step, at about a quarter of the
+      latency and no per-call cost.
     </p>
   </section>
 
@@ -408,26 +548,42 @@
     <p class="eyebrow">Design</p>
     <h2>The model phrases numbers; code computes them</h2>
     <p>
-      Ask "how much did I spend on dining" and a pandas query in
-      <code>analysis.answer_query</code> computes the figure. The LLM gets the
-      computed numbers and writes one sentence. Then
-      <code>reconcile.assert_numbers_present</code> checks that every number it
-      was given still appears in that sentence, within a cent. If one was
-      dropped or changed, the app shows a template sentence instead.
+      Two language models touch a receipt, and neither does arithmetic. Each
+      step below is labeled with what runs it.
     </p>
-    <p>
-      Receipt totals get the same treatment. For each receipt the app adds the
-      line items and tax and compares the sum with the printed total, allowing
-      the larger of 2 cents or 0.5%. A mismatch is flagged for a one-tap human
-      correction and never adjusted to agree.
-    </p>
-    <figure>
-      <div class="plate">
-        <img width="1575" height="825" src="../assets/architecture.png" loading="lazy"
-          alt="Pipeline diagram: receipt photo to local OCR with tesseract, then claude -p extraction and validation, PII sweep, reconciliation in plain code, LoRA categorization; separately, a spend question goes to pandas, the LLM only phrases the answer, and a narration guard verifies the numbers." />
+    <ol class="pipe">
+      <li><span class="k">01</span><span class="who code">code</span><span><code>tesseract</code> reads the photo locally.</span></li>
+      <li><span class="k">02</span><span class="who llm">claude -p</span><span>One call per receipt rejects photos that are not receipts and fills a Pydantic <code>Receipt</code>. The raw OCR text is then discarded.</span></li>
+      <li><span class="k">03</span><span class="who code">code</span><span><code>privacy.sweep_receipt</code> masks card-like digit runs to the last four and replaces emails and phone numbers.</span></li>
+      <li><span class="k">04</span><span class="who code">code</span><span><code>reconcile</code> adds line items and tax and compares the sum with the printed total. A mismatch is flagged for a one-tap correction, never adjusted to agree.</span></li>
+      <li><span class="k">05</span><span class="who llm">LoRA 1.5B</span><span>Each line item gets one of 12 categories.</span></li>
+      <li class="split">Later, a spending question</li>
+      <li><span class="k">06</span><span class="who code">pandas</span><span><code>analysis.answer_query</code> computes the figure from the stored receipts.</span></li>
+      <li><span class="k">07</span><span class="who llm">claude -p</span><span>Writes one sentence around the computed numbers.</span></li>
+      <li><span class="k">08</span><span class="who code">code</span><span><code>assert_numbers_present</code> checks every number survived to within a cent. If one was dropped or changed, the app shows a template sentence instead.</span></li>
+    </ol>
+
+    <div class="tape recon" id="recon">
+      <div class="tape-head"><span>Try the reconciliation rule</span><span>src/reconcile.py</span></div>
+      <div class="tape-body recon-grid">
+        <div>
+          <label>Line item 1 <input type="number" step="0.01" inputmode="decimal" data-r="a" value="4.25" /></label>
+          <label>Line item 2 <input type="number" step="0.01" inputmode="decimal" data-r="b" value="12.99" /></label>
+          <label>Line item 3 <input type="number" step="0.01" inputmode="decimal" data-r="c" value="3.49" /></label>
+          <label>Tax <input type="number" step="0.01" inputmode="decimal" data-r="tax" value="1.68" /></label>
+          <label>Printed total <input type="number" step="0.01" inputmode="decimal" data-r="total" value="22.51" /></label>
+        </div>
+        <div>
+          <dl>
+            <div><dt>Computed total</dt><dd id="r-comp">22.41</dd></div>
+            <div><dt>Difference</dt><dd id="r-delta">-0.10</dd></div>
+            <div><dt>Tolerance</dt><dd id="r-tol">0.11</dd></div>
+          </dl>
+          <p class="status ok" id="r-status" aria-live="polite">ok: within tolerance</p>
+        </div>
       </div>
-      <figcaption>The pipeline. The LLM extracts fields from OCR text and phrases answers; arithmetic happens in code.</figcaption>
-    </figure>
+      <p class="tape-foot">Example values; change any of them. The rule is the one in the code: computed total is items plus tax (the printed subtotal is not trusted), and the tolerance is the larger of $0.02 or 0.5% of the printed total.</p>
+    </div>
   </section>
 
   <section class="stop">
@@ -437,12 +593,11 @@
       The <code>Receipt</code> and <code>LineItem</code> schemas have no field for
       a cardholder name, card number, address or loyalty number, so extraction
       never asks for them. The raw OCR text is discarded once a validated
-      <code>Receipt</code> exists. <code>privacy.sweep_receipt</code> then runs a
-      regex pass over merchant and item strings, masks card-like digit runs to
-      the last four, replaces emails and phone numbers, and reports how many
-      redactions it made. On a hosted deployment, receipts stay in memory for the
-      session; <code>privacy.is_space_environment()</code> is the one check both
-      paths use before writing anything to disk.
+      <code>Receipt</code> exists. The regex sweep in step 03 catches what slips
+      through and reports how many redactions it made. On a hosted deployment,
+      receipts stay in memory for the session;
+      <code>privacy.is_space_environment()</code> is the one check both paths use
+      before writing anything to disk.
     </p>
   </section>
 
@@ -450,11 +605,12 @@
     <p class="eyebrow">Build</p>
     <h2>Stack and series</h2>
     <dl class="specs">
-      <div class="spec"><dt>Classifier</dt><dd>Qwen2.5-1.5B-Instruct (4-bit), LoRA via MLX on Apple Silicon, served with <code>mlx_lm.generate</code></dd></div>
-      <div class="spec"><dt>Extraction</dt><dd><code>tesseract</code> OCR, then one <code>claude -p</code> call per receipt to check it is a receipt and pull structured fields</dd></div>
+      <div class="spec"><dt>Classifier</dt><dd>Qwen2.5-1.5B-Instruct (4-bit), LoRA via MLX on Apple Silicon, 3.96M trainable parameters, served with <code>mlx_lm.generate</code></dd></div>
+      <div class="spec"><dt>Extraction</dt><dd><code>tesseract</code> OCR, then one <code>claude -p</code> call per receipt</dd></div>
       <div class="spec"><dt>Validation</dt><dd>Pydantic schemas; reconciliation and narration guard in <code>src/reconcile.py</code></dd></div>
       <div class="spec"><dt>Queries</dt><dd>Spoken or typed questions parsed into a structured <code>Query</code>, answered by pandas, repeats served from a semantic cache</dd></div>
       <div class="spec"><dt>App</dt><dd>Gradio: batch upload, reconciled grid, dashboard, voice query</dd></div>
+      <div class="spec"><dt>Tests</dt><dd>19, across reconciliation, PII redaction and the spend-query layer</dd></div>
       <div class="spec"><dt>Series</dt><dd>One of four apps that fine-tune a local model and benchmark it against Claude: <a href="https://lyhjeremy.github.io/cellar-scanner/">Cellar Scanner</a>, <a href="https://lyhjeremy.github.io/race-day-copilot/">Race Day Copilot</a>, Receipt Auditor, <a href="https://lyhjeremy.github.io/menu-decoder/">Menu Decoder</a></dd></div>
     </dl>
   </section>
@@ -467,7 +623,7 @@
     <h2>Read the code and the raw outputs</h2>
     <div class="cta-row">
       <a class="btn btn-primary" href="https://github.com/lyhjeremy/receipt-auditor">Code and benchmark</a>
-      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Read the write-up</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Engineering notes</a>
     </div>
   </section>
 
@@ -475,7 +631,7 @@
     <p>
       Receipt Auditor ·
       <a href="../">Project page</a> ·
-      <a href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Write-up</a> ·
+      <a href="https://github.com/lyhjeremy/receipt-auditor/blob/main/writeup.md">Engineering notes</a> ·
       <a href="https://github.com/lyhjeremy/receipt-auditor">Source</a> ·
       <a href="../privacy/">Privacy</a> ·
       <a href="../terms/">Terms</a> ·
@@ -483,5 +639,156 @@
     </p>
   </footer>
 </div>
+
+<script>
+(function () {
+  /* eval/benchmark.json */
+  var BENCH = [
+    { name: "Base Qwen2.5-1.5B", n: 220, cls: "s-base", top1: 0.2773, f1: 0.3334, lat: 4.985 },
+    { name: "Qwen2.5-1.5B + LoRA", n: 220, cls: "s-lora", top1: 0.9045, f1: 0.8929, lat: 4.52 },
+    { name: "Claude, zero-shot", n: 150, cls: "s-claude", top1: 0.56, f1: 0.5059, lat: 17.702 }
+  ];
+  var TITLES = {
+    top1: "The adapter takes the same 1.5B model from 27.7% to 90.5%",
+    f1: "Macro-F1 tells the same story: 0.893 against 0.506 for Claude",
+    lat: "The local model answers in 4.5 s on average; Claude takes 17.7 s"
+  };
+  function fmt(m, v) { return m === "top1" ? (v * 100).toFixed(1) + "%" : m === "f1" ? v.toFixed(3) : v.toFixed(1) + " s"; }
+  function drawBench(m) {
+    var max = m === "lat" ? 18 : 1;
+    document.getElementById("bench-rows").innerHTML = BENCH.map(function (b) {
+      return '<div class="bench-row"><span class="nm">' + b.name + '<small>n = ' + b.n + '</small></span>' +
+        '<span class="track"><span class="fill ' + b.cls + '" style="width:' + (b[m] / max * 100).toFixed(1) + '%"></span></span>' +
+        '<span class="v">' + fmt(m, b[m]) + '</span></div>';
+    }).join("");
+    document.getElementById("bench-title").textContent = TITLES[m];
+  }
+  function wire(group, attr, fn) {
+    group.querySelectorAll("button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        group.querySelectorAll("button").forEach(function (o) { o.setAttribute("aria-pressed", o === btn ? "true" : "false"); });
+        fn(btn.getAttribute(attr));
+      });
+    });
+  }
+  wire(document.querySelector("#bench .seg"), "data-m", drawBench);
+
+  /* Test counts: eval/dataset_card.json (label_balance.test). Errors: eval/confusions.json. */
+  var CLS = [["groceries", 9], ["dining", 13], ["coffee_snacks", 15], ["transport", 15], ["fuel", 14], ["health", 15],
+             ["household", 16], ["clothing", 30], ["entertainment", 26], ["subscriptions_utilities", 23], ["travel", 16], ["other", 28]];
+  var CONF = [["household", "other", 7], ["travel", "transport", 4], ["transport", "fuel", 4], ["other", "health", 2],
+              ["fuel", "transport", 2], ["dining", "coffee_snacks", 1], ["travel", "fuel", 1]];
+  var rows = CLS.map(function (c, i) {
+    var errs = CONF.filter(function (e) { return e[0] === c[0]; });
+    var bad = errs.reduce(function (s, e) { return s + e[2]; }, 0);
+    return { name: c[0], n: c[1], ok: c[1] - bad, errs: errs, order: i };
+  });
+  function drawCls(mode) {
+    var r = rows.slice();
+    if (mode === "acc") r.sort(function (a, b) { return a.ok / a.n - b.ok / b.n || b.n - a.n; });
+    if (mode === "n") r.sort(function (a, b) { return b.n - a.n || a.order - b.order; });
+    if (mode === "tax") r.sort(function (a, b) { return a.order - b.order; });
+    var maxN = 30;
+    document.getElementById("cls-rows").innerHTML = r.map(function (c) {
+      var segs = '<span class="ok" style="width:' + (c.ok / maxN * 100) + '%"></span>' +
+        c.errs.map(function (e) { return '<span class="bad" style="width:' + (e[2] / maxN * 100) + '%"></span>'; }).join("");
+      var err = c.errs.length ? '<span class="err">' + c.errs.map(function (e) { return e[2] + " to " + e[1]; }).join(", ") + '</span>' : "";
+      return '<div class="cls-row"><span class="nm">' + c.name + ' <small>' + c.n + '</small></span>' +
+        '<span class="cls-bar" role="img" aria-label="' + c.name + ': ' + c.ok + ' of ' + c.n + ' correct">' + segs + '</span>' +
+        '<span class="v">' + c.ok + '/' + c.n + '</span>' + err + '</div>';
+    }).join("");
+  }
+  drawCls("acc");
+  wire(document.querySelector("#cls .seg"), "data-s", drawCls);
+
+  /* eval/raw_outputs.json: base_lat, lora_lat, claude_lat, rounded to 0.01 s */
+  var LAT = {"base_lat":[8.47,5.94,7.17,7.44,6.17,6.91,5.76,5.42,4.37,5.25,5.94,5.94,5.49,5.77,5.79,5.25,5.77,6.49,5.91,4.94,4.75,5.54,6.03,5.32,5.61,4.53,3.87,4.77,4.91,5.5,5.83,5.25,4.92,3.94,5.09,4.94,5.31,4.7,4.84,5.81,6.21,5.61,6.18,5.36,4.3,3.89,5.23,6.39,6.15,5.43,6.72,6.28,5.7,6.84,5.59,5.84,6.2,4.68,4.31,3.97,4.38,4.9,5.48,6.06,6.1,6.48,5.77,6.16,5.82,5.24,7.34,5.87,5.35,5.23,5.3,5.4,4.69,5.73,6.14,5.42,6.65,5.27,5.71,4.11,3.84,5.13,5.3,5.99,5.79,6.19,6.66,5.82,5.32,4.3,4.38,5.31,4.09,3.95,4.43,5.46,5.29,4.8,4.08,3.91,4.62,4.64,5.28,5.75,5.57,3.82,3.86,4.24,4.63,5.34,4.36,3.83,4.62,4.07,5.9,4.68,5.26,4.07,4.92,4.75,4.32,3.88,3.81,3.76,3.79,3.78,4.42,4.16,5.07,6.24,4.79,4.53,4.27,4.55,4.98,4.07,4.73,4.2,4.95,4.05,4.88,4.86,4.83,4.71,4.6,4.56,3.79,3.63,3.76,3.83,4.64,4.86,4.94,3.86,4.37,5.14,5.09,4.25,5.07,4.6,3.74,4.59,4.81,4.43,3.9,7.12,7.72,5.75,5.17,3.93,3.8,3.75,3.85,3.82,4.75,4.72,5.33,5.45,5.25,4.15,3.91,4.55,4.97,4.77,4.78,4.93,4.3,3.8,4.64,4.22,4.7,3.79,4.36,4.15,4.84,3.89,4.31,4.14,4.51,5.07,4.28,5.23,4.47,4.34,4.83,3.87,3.74,3.72,4.42,4.9,5.82,4.49,5.14,4.28,3.81,4.8],"lora_lat":[4.9,4.62,3.55,3.67,3.65,4.55,4.91,5.11,4.67,4.36,3.68,3.66,4.75,4.29,4.67,4.0,3.86,3.67,3.71,4.57,4.63,5.52,4.08,5.28,4.67,3.79,4.81,4.89,4.84,4.73,4.22,5.02,5.34,4.79,4.38,4.3,4.74,4.46,4.13,3.62,3.67,3.61,4.7,4.71,6.03,4.14,5.42,5.01,5.26,4.94,3.58,4.4,4.62,4.89,4.09,5.65,4.2,4.73,3.67,3.62,3.61,3.57,4.89,4.44,6.05,5.5,5.3,4.08,5.13,4.6,4.47,3.63,4.55,4.5,5.11,4.35,4.59,3.74,4.87,4.82,4.92,3.76,3.75,3.62,3.65,3.63,4.6,4.45,5.89,4.84,5.01,3.55,4.66,3.91,4.99,4.46,4.48,6.16,4.84,6.52,4.8,6.43,5.39,5.97,4.48,3.92,4.15,4.47,5.73,4.41,4.31,4.22,3.65,3.84,4.43,4.24,4.89,3.74,3.78,4.57,4.7,4.49,3.77,4.41,4.43,4.17,3.81,3.98,4.2,4.68,4.79,4.7,3.69,3.98,4.18,5.04,5.29,4.48,4.6,3.67,3.86,4.35,4.54,4.64,3.66,3.67,4.79,4.42,5.55,5.72,4.97,4.82,3.65,3.72,4.42,4.05,5.15,4.43,4.75,4.25,4.95,5.44,4.6,4.51,3.66,4.68,4.55,4.31,3.58,4.59,4.02,5.88,5.52,5.36,3.96,4.89,4.64,5.97,4.9,4.69,4.26,4.66,4.75,4.64,3.85,5.04,5.03,4.3,3.65,4.61,4.75,5.5,4.85,4.29,3.72,4.21,4.58,4.59,4.4,3.71,4.47,4.55,5.34,4.53,4.74,3.64,4.19,4.14,4.52,4.15,4.56,4.03,5.3,4.37,6.06,4.73,4.78,4.57,3.88,4.25],"claude_lat":[11.21,14.23,12.65,14.21,50.15,17.73,14.41,10.67,23.55,13.29,18.85,12.16,58.83,16.07,12.02,9.84,12.06,19.39,12.8,12.82,36.89,11.52,12.3,15.73,13.41,13.82,12.48,22.29,10.07,10.14,10.6,15.96,12.13,9.65,14.67,11.16,10.2,14.46,21.53,12.7,13.19,17.13,15.34,17.31,15.04,11.28,13.66,66.23,13.89,14.57,16.76,44.2,14.65,14.25,10.77,12.19,16.19,11.22,12.2,56.17,19.67,12.16,16.99,71.03,12.43,11.1,12.02,10.17,19.7,11.61,15.52,12.23,55.14,13.61,7.99,40.06,14.88,12.56,11.84,25.65,17.43,11.65,13.13,12.09,16.56,13.97,11.44,8.9,21.03,11.8,25.48,11.92,14.33,13.5,60.88,26.84,15.35,9.1,14.63,15.19,11.44,11.41,12.11,9.77,10.88,14.67,11.94,11.92,20.06,12.06,12.03,12.96,10.75,10.82,14.92,13.7,11.67,15.86,14.93,11.93,14.03,17.1,9.97,14.22,12.19,20.33,17.46,75.89,13.96,12.26,11.12,30.58,13.99,11.99,11.78,15.37,27.13,12.58,14.2,14.82,11.95,9.12,11.16,36.43,12.43,14.0,12.5,13.95,18.75,71.7]};
+  var SYS = [{ k: "lora_lat", name: "LoRA", cls: "d-lora" }, { k: "base_lat", name: "Base", cls: "d-base" }, { k: "claude_lat", name: "Claude", cls: "d-claude" }];
+  SYS.forEach(function (s) {
+    var v = LAT[s.k].slice().sort(function (a, b) { return a - b; }), n = v.length;
+    s.med = n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2;
+    s.order = LAT[s.k].map(function (x, i) { return i; }).sort(function (a, b) { return LAT[s.k][a] - LAT[s.k][b]; });
+  });
+  var box = document.getElementById("lat-box"), read = document.getElementById("lat-read");
+  var pts = [], cur = null, geom = null;
+  function drawLat() {
+    var W = Math.max(280, box.clientWidth), narrow = W < 520;
+    var left = narrow ? 70 : 104, right = 14, top = 6, rowH = narrow ? 64 : 74, H = top + rowH * 3 + 26;
+    var l0 = Math.log(3), l1 = Math.log(80);
+    var X = function (v) { return left + (Math.log(v) - l0) / (l1 - l0) * (W - left - right); };
+    var s = '<svg id="lat-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" tabindex="0" role="img" aria-label="Per-item latency on a log scale. LoRA median 4.5 seconds, base 4.9, Claude 13.7 with a tail past 70 seconds.">';
+    [3, 5, 10, 20, 40, 80].forEach(function (t) {
+      s += '<line class="lat-grid" x1="' + X(t) + '" x2="' + X(t) + '" y1="' + top + '" y2="' + (top + rowH * 3) + '"/>' +
+           '<text class="lat-tick" x="' + X(t) + '" y="' + (H - 6) + '" text-anchor="middle">' + t + ' s</text>';
+    });
+    pts = [];
+    SYS.forEach(function (sys, r) {
+      var yc = top + rowH * r + rowH / 2, row = [];
+      s += '<text class="lat-name" x="0" y="' + (yc - 3) + '">' + sys.name + '</text>' +
+           '<text class="lat-sub" x="0" y="' + (yc + 13) + '">med ' + sys.med.toFixed(1) + ' s</text>';
+      LAT[sys.k].forEach(function (v, j) {
+        var jit = (((j * 37) % 19) / 18 - 0.5) * rowH * 0.6;
+        var cx = X(v), cy = yc + jit;
+        row.push({ v: v, j: j, x: cx, y: cy });
+        s += '<circle class="' + sys.cls + '" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + (narrow ? 2.3 : 2.9) + '" fill-opacity=".6"/>';
+      });
+      s += '<line class="lat-med" x1="' + X(sys.med) + '" x2="' + X(sys.med) + '" y1="' + (yc - rowH * 0.42) + '" y2="' + (yc + rowH * 0.42) + '"/>';
+      pts.push(row);
+    });
+    s += '<circle class="lat-cur" id="lat-cur" r="6" cx="0" cy="0" visibility="hidden"/></svg>';
+    box.innerHTML = s;
+    geom = { W: W };
+    var svg = document.getElementById("lat-svg");
+    svg.addEventListener("pointermove", function (e) {
+      var rect = svg.getBoundingClientRect(), mx = (e.clientX - rect.left) * W / rect.width, my = (e.clientY - rect.top) * W / rect.width;
+      var best = null, bd = 400;
+      pts.forEach(function (row, r) { row.forEach(function (p, i) { var d = (p.x - mx) * (p.x - mx) + (p.y - my) * (p.y - my); if (d < bd) { bd = d; best = { r: r, j: i }; } }); });
+      if (best) show(best.r, best.j);
+    });
+    svg.addEventListener("keydown", function (e) {
+      if (!cur) cur = { r: 2, j: SYS[2].order[SYS[2].order.length - 1] };
+      var r = cur.r, rank = SYS[r].order.indexOf(cur.j);
+      if (e.key === "ArrowRight") rank = Math.min(rank + 1, SYS[r].order.length - 1);
+      else if (e.key === "ArrowLeft") rank = Math.max(rank - 1, 0);
+      else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        r = (r + (e.key === "ArrowDown" ? 1 : 2)) % 3;
+        rank = Math.round(rank / (SYS[cur.r].order.length - 1) * (SYS[r].order.length - 1));
+      } else return;
+      e.preventDefault();
+      show(r, SYS[r].order[rank]);
+    });
+    svg.addEventListener("focus", function () { if (!cur) show(2, SYS[2].order[SYS[2].order.length - 1]); });
+    if (cur) show(cur.r, cur.j);
+  }
+  function show(r, j) {
+    cur = { r: r, j: j };
+    var p = pts[r][j], c = document.getElementById("lat-cur");
+    c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); c.setAttribute("visibility", "visible");
+    var rank = SYS[r].order.indexOf(j) + 1, n = SYS[r].order.length;
+    read.textContent = SYS[r].name + ", test item " + (j + 1) + ": " + p.v.toFixed(2) + " s (" + ordinal(rank) + " fastest of " + n + ")";
+  }
+  function ordinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  drawLat();
+  var lastW = box.clientWidth;
+  window.addEventListener("resize", function () { if (box.clientWidth !== lastW) { lastW = box.clientWidth; drawLat(); } });
+
+  /* Reconciliation: same rule as src/reconcile.py */
+  var rec = document.getElementById("recon");
+  function recalc() {
+    var g = function (k) { var v = parseFloat(rec.querySelector('[data-r="' + k + '"]').value); return isNaN(v) ? 0 : v; };
+    var comp = g("a") + g("b") + g("c") + g("tax"), total = g("total");
+    var tol = Math.max(0.02, 0.005 * total), delta = Math.round((comp - total) * 100) / 100;
+    var ok = Math.abs(delta) <= tol;
+    document.getElementById("r-comp").textContent = comp.toFixed(2);
+    document.getElementById("r-delta").textContent = (delta > 0 ? "+" : "") + delta.toFixed(2);
+    document.getElementById("r-tol").textContent = tol.toFixed(2);
+    var st = document.getElementById("r-status");
+    st.className = "status " + (ok ? "ok" : "bad");
+    st.textContent = ok ? "ok: within tolerance" : "mismatch: flagged for a one-tap correction";
+  }
+  rec.querySelectorAll("input").forEach(function (i) { i.addEventListener("input", recalc); });
+  recalc();
+})();
+</script>
 </body>
 </html>

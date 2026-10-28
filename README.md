@@ -18,9 +18,11 @@ One of four apps that fine-tune a small local model and benchmark it against Cla
 | Qwen2.5-1.5B + LoRA | 220 | **90.5%** | **0.893** | 4.5 s | $0 |
 | Claude, zero-shot | 150 | 56.0% | 0.506 | 17.7 s | Max subscription |
 
-Read the Claude row with care (details under [Limitations](#limitations)). Claude answered in prose that the scorer parsed by substring match, which undercounts it, and it ran with file access inside the repo, so most of its answers had seen the category list. The LoRA figure is exact, and the gap is smaller than 34.5 points.
+Read the Claude row with care (details under [Limitations](#limitations)). Claude answered in prose that a script had to parse, which probably undercounts it, and it ran with file access inside the repo, so most of its answers had seen the category list. The LoRA figure is exact, and the gap is smaller than 34.5 points.
 
 ![Confusion matrix for the LoRA model across 12 categories; the largest errors are household predicted as other, travel as transport, and transport as fuel](eval/confusion_matrix.png)
+
+The adapter gets 199 of the 220 test items right. Household is the weak category (9 of 16, with 7 called `other`); clothing, entertainment, subscriptions, coffee, health and groceries have no errors. The [write-up](https://lyhjeremy.github.io/receipt-auditor/overview/) has the per-category breakdown and every call's latency as interactive charts.
 
 ## Method
 
@@ -68,7 +70,7 @@ No API key is needed. Extraction uses `claude -p` on a Claude subscription. With
 
 - The data is synthetic only. The spec calls for 10 to 20 hand-labeled receipts of my own as a final test, and none have been added.
 - The labels are noisy. They came from the same generator as the training data and are inconsistent in places (a CVS first-aid kit is `other`; Shell unleaded is `fuel` on one row and `transport` on another). The LoRA model learned those habits, and Claude's more reasonable answers on such rows count as errors.
-- The scorer takes the longest category name found anywhere in Claude's prose answer, and 83 of Claude's 150 answers mention more than one category, so 56.0% understates Claude.
+- Claude's answers are prose, and 83 of the 150 mention more than one category, so a script had to pick one. The original rule is lost; the reconstruction takes the longest category name in the answer, which sometimes picks a category Claude was ruling out. 56.0% probably understates Claude.
 - Claude saw the categories. `claude -p` ran from inside the repo with file access, and 101 of its 150 answers cite `src/schemas.py`. Menu Decoder fixed the same issue by running from a scratch directory; this benchmark was not rerun.
 - The script that produced `eval/benchmark.md` was lost before it was committed. `training/bench_categorizer.py` is a reconstruction that reproduces the LoRA figure exactly and the base and Claude figures approximately (about 26% and 51%).
 
