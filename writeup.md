@@ -1,6 +1,6 @@
 # Receipt Auditor: a finance app where the model never does the arithmetic
 
-A Qwen2.5-1.5B model with a LoRA adapter, trained on a laptop, puts receipt line items into one of 12 spend categories at 90.5% top-1 accuracy on a held-out test set. Claude, asked the same question zero-shot, scored 56.0%. That gap is probably smaller than it looks, and a good part of this write-up is about why. I found the reasons by reading the raw outputs row by row, well after the headline number was published.
+A Qwen2.5-1.5B model with a LoRA adapter, trained on a laptop, puts receipt line items into one of 12 spend categories at 90.5% top-1 accuracy on a held-out test set. Claude, asked zero-shot with the list of categories, scored 80.0% on the same 220 rows. Most of the 10.5-point gap is on rows whose labels a person would argue with. An earlier Claude run reported 56.0%; reading its raw outputs row by row showed it was set up and scored badly, and the 80.0% comes from a clean rerun on 2026-10-28.
 
 Design and copy follow [these standards](https://github.com/lyhjeremy/lyhjeremy/blob/main/DESIGN_STANDARDS.md).
 
@@ -16,15 +16,15 @@ Given a merchant string and a line-item description, the model predicts one of 1
 
 Training used the same settings as the other apps in the series: LoRA on Qwen2.5-1.5B-Instruct (4-bit) with MLX on Apple Silicon, batch 4, 12 layers, 800 iterations, learning rate 1.5e-4. Validation loss fell from 5.085 to 0.419 (`eval/loss_curve.png`).
 
-All three systems got the same prompt, merchant plus item with no category list, which is the format the LoRA model was trained on. Base and LoRA ran on all 220 test rows; Claude ran on the first 150 after a seeded shuffle.
+Base and LoRA got the training prompt, merchant plus item with no category list. Claude got the same text followed by the 12 allowed labels and an instruction to answer with one of them (`eval/claude_rerun/prompt_template.txt`); a zero-shot model has no other way to know the label set. All three ran on all 220 test rows. Claude's answers were scored by exact match to a label after normalizing case and whitespace, and none of its 220 answers was invalid.
 
 | System | N | Top-1 | Macro-F1 | Latency | Cost/1k calls |
 |---|---|---|---|---|---|
 | Base Qwen2.5-1.5B | 220 | 27.7% | 0.333 | 5.0 s | $0 |
 | Qwen2.5-1.5B + LoRA | 220 | **90.5%** | **0.893** | 4.5 s | $0 |
-| Claude, zero-shot | 150 | 56.0% | 0.506 | 17.7 s | Max subscription |
+| Claude, zero-shot | 220 | 80.0% | 0.770 | 3.3 s | Max subscription |
 
-Fine-tuning took the base model from 27.7% to 90.5%, a 3.3x lift. The LoRA model is also about four times faster than a `claude -p` call and costs nothing per call.
+Fine-tuning took the base model from 27.7% to 90.5%, a 3.3x lift. The local model costs nothing per call. It is not faster: each local call reloads the model through `mlx_lm.generate`, and with tools off a `claude -p` call averaged 3.3 s against 4.5 s.
 
 <p align="center">
   <img src="eval/confusion_matrix.png" alt="Confusion matrix for the LoRA model across 12 categories; the largest errors are household predicted as other, travel predicted as transport, and transport predicted as fuel" width="600">
@@ -32,21 +32,19 @@ Fine-tuning took the base model from 27.7% to 90.5%, a 3.3x lift. The LoRA model
 
 The LoRA model's largest errors are household called other (7 times), travel called transport (4) and transport called fuel (4), then other called health (2) and fuel called transport (2). Household and other overlap on generic home goods; travel, transport and fuel overlap on anything involving a car.
 
-## How far to trust the 34.5-point gap
+## How far to trust the 10.5-point gap
 
-Going back through `eval/raw_outputs.json`, I found four problems with the comparison. The first two mean the table undercounts Claude; the other two make the Claude column harder to read in either direction.
+The labels are noisy. They came from the same generator as the training data and aren't consistent: a first-aid kit and cold-relief caplets from CVS are both labeled `other`, a Starbucks latte is `dining`, and Shell unleaded is `fuel` on one test row and `transport` on another. The LoRA model learned those habits. Claude did not, and 38 of its 44 misses are rows labeled `other` or `transport` where it answered `household`, `health` or `fuel`: paint, screws and HDMI cables labeled `other`, gasoline labeled `transport`. It got none of the 28 `other` rows right. A person would accept most of those answers.
 
-The labels are noisy. They came from the same generator as the training data and aren't consistent: a first-aid kit and cold-relief caplets from CVS are both labeled `other`, a Starbucks latte is `dining`, and Shell unleaded is `fuel` on one test row and `transport` on another. The LoRA model learned those habits. Claude answered `health`, `coffee_snacks` and `fuel`, which a person would mostly accept, and was marked wrong.
+The prompts are not identical. Claude saw the 12 labels in its prompt and the LoRA model did not, because it learned them in training. That is the fair way to ask a zero-shot model, but it is a difference.
 
-The scoring probably undercounts Claude. Claude answered in full sentences, so a script had to pick one category out of each answer, and 83 of the 150 answers mention more than one. The original script's rule is lost (see below). The reconstruction takes the longest category name in the answer, and on an answer such as "would fall under the **`health`** category ... distinct from `household` or `other`" it picks `household`, the category Claude was ruling out.
+The base model's score rests on a reconstructed scorer. The script that produced `eval/benchmark.md` was lost before it was committed, and `training/bench_categorizer.py` was rebuilt against the stored raw outputs. It reproduces the LoRA figure exactly, because those outputs are single category names, and it reproduces the test-set order exactly, because the confusion pairs match. For the base model, whose outputs are prose, it gets about 26% against the published 27.7%.
 
-Claude saw the category list anyway. The prompt had none, but `claude -p` ran from inside the repo with file access, and 101 of its 150 answers cite `src/schemas.py`. Most of the Claude column is contaminated in that sense. Menu Decoder hit the same problem and fixed it by running the CLI from a scratch directory; this benchmark has not been rerun that way.
-
-The scoring script is a reconstruction. The script that produced `eval/benchmark.md` was lost before it was committed, and `training/bench_categorizer.py` was rebuilt against the stored raw outputs. It reproduces the LoRA figure exactly, because those outputs are single category names, and it reproduces the test-set order exactly, because the confusion pairs match. For base and Claude, whose outputs are prose, it gets about 26% and 51% against the published 27.7% and 56.0%.
+The rerun replaced the first Claude run (2026-10-28). That run, published until this date, reported 56.0% on 150 rows. `claude -p` ran from inside the repo with file access, and 101 of its 150 answers cite `src/schemas.py`, so most of them had read the category list from the code. Its answers were prose, 83 of them naming more than one category, and the lost scoring script picked one by a rule nobody can now check. The rerun copies only the test rows and the prompt into a scratch directory, runs the CLI there with `--tools ""`, and asks for one label. The first run's outputs stay in `eval/raw_outputs.json`; the rerun's runner, prompt, raw outputs, scorer and results are in `eval/claude_rerun/`.
 
 There is also no test on receipts from outside the generator. The spec calls for 10 to 20 of my own receipts, photographed and hand-labeled, and none have been added. Since Claude both labeled the training data and is a column in the benchmark, a test on the same synthetic distribution can't rule out that receipts from a wallet are harder. Until that set exists, every figure here is about synthetic data.
 
-What the result does support is narrower: a 1.5B model with a small adapter learns a fixed 12-label scheme well enough to replace a frontier-model call for this step, at a quarter of the latency and no per-call cost.
+What the result does support is narrower: a 1.5B model with a small adapter learns a fixed 12-label scheme, including its quirks, well enough to replace a frontier-model call for this step at no per-call cost.
 
 ## Reading a receipt without a vision API
 
@@ -70,7 +68,7 @@ The first benchmark run hit repeated 90-second timeouts on `mlx_lm.generate` cal
 
 A training log came out empty. `train.sh` pipes through `tee` to `training/adapters/train.log` for the loss-curve script, but the file was 0 bytes even though training finished, probably because the folder is synced by Google Drive. The same output had gone to an outer run log through a different redirect, and the loss curve was rebuilt from that.
 
-The lesson I'd keep from this project is the one in the section on the gap: read the raw outputs before trusting a benchmark. The noisy labels, the scoring problem and the schema leak all showed up only when I read `eval/raw_outputs.json` line by line.
+The lesson I'd keep from this project is the one in the section on the gap: read the raw outputs before trusting a benchmark. The noisy labels, the scoring problem and the schema leak all showed up only when I read `eval/raw_outputs.json` line by line, and fixing the last two moved Claude from 56.0% to 80.0%.
 
 ---
 

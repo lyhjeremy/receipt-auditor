@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Receipt Auditor: a 1.5B LoRA classifier for receipt line items</title>
-<meta name="description" content="Receipt photos in, reconciled and categorized spending out. A Qwen2.5-1.5B LoRA fine-tune sorts line items into 12 categories at 90.5% top-1 on a merchant-split test set, against 56.0% for Claude zero-shot." />
+<meta name="description" content="Receipt photos in, reconciled and categorized spending out. A Qwen2.5-1.5B LoRA fine-tune sorts line items into 12 categories at 90.5% top-1 on a merchant-split test set, against 80.0% for Claude zero-shot." />
 <link rel="stylesheet" href="assets/family.css" />
 <style>
   * { box-sizing: border-box; border-radius: 0; }
@@ -65,10 +65,10 @@
     <h2>Top-1 accuracy, 12 categories</h2>
     <ul class="lines">
       <li>Base Qwen2.5-1.5B<span class="v">27.7%</span></li>
-      <li>Claude, zero-shot<span class="v">56.0%</span></li>
+      <li>Claude, zero-shot<span class="v">80.0%</span></li>
       <li class="total">Qwen2.5-1.5B + LoRA<span class="v">90.5%</span></li>
     </ul>
-    <p class="note">220 held-out line items from 158 merchants not seen in training (Claude: 150 of them). Macro-F1 0.893 against 0.506. 4.5 s per item locally, 17.7 s for Claude. Synthetic data only. The Claude figure is hard to read either way: its prose answers had to be parsed by a heuristic, and Claude could read the category list from the repo. The <a href="overview/">write-up</a> goes through both.</p>
+    <p class="note">220 held-out line items from 158 merchants not seen in training, all three systems on every row. Macro-F1 0.893 against 0.770. Synthetic data only. Claude was given the 12 allowed labels in its prompt and scored by exact match. Most of its misses are rows with debatable labels, such as hardware labeled <code>other</code>. Rerun 2026-10-28 from a scratch directory with tools off; the first run's 56.0% ran inside the repo and was parsed from prose. The <a href="overview/">write-up</a> has the details.</p>
   </section>
 
   <section>

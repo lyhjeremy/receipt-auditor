@@ -1,5 +1,7 @@
 # Receipt Auditor -- Spend-Category Classifier Benchmark
 
+Note, 2026-10-28: the claude_teacher row below is the first run and is superseded. See claude_rerun/results.md for the clean rerun (80.0% on all 220 rows, exact-match scoring).
+
 Full held-out test set: 220 rows, held out by merchant (no merchant appears in both train and test). base/LoRA evaluated on a 220-row subsample; Claude teacher on a separate 150-row subsample (both disclosed, not hidden). **No real-receipt column**: Jeremy hasn't yet supplied the 10-20 labeled real receipts the spec calls for (RECEIPT_AUDITOR_SPEC.md Sec.2) -- these numbers are synthetic-only.
 
 | System | N | Top-1 acc | Macro-F1 | Latency (s/item) | Cost/1k |
